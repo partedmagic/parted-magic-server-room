@@ -1,45 +1,41 @@
 <?xml version='1.0' encoding='UTF-8' ?>
 
 <menu>
-    <item id="harvest" name="Harvest" esES="Recolectar" code="CUSTOMACTION" parameter="qharvestapple,qharvestpear,qharvestwheat,qharvestsugarcane,qharvestbamboo,qharvestplanttrap,qharvestwildwheat,qharvestwildsugarcane,qharvestwildbamboo,qharvestblueradish,qharvestsnowcherry,qharvestbanana,qpickmushroom,qpickcavemushroom,qharvestcactus,qgatherredflower,qgatherplantedredflower,qgatherblueflower,qgatherplantedblueflower,qgatheryellowflower,qgatherplantedyellowflower,qharvestppear,qharvestpapple,qharvestpbanana,qharvestpblueradish,qharvestpcactus,qharvestpsnowcherry,qpickpcavemushroom,qpickpmushroom" icon="ui_harvest" />
-    <item id="chop" name="Chop" esES="Talar" code="CUSTOMACTION" parameter="qchop,qchopplantedtree,qchopplantedtree2,qchopplantedsnowtree,qchopplantedjungletree,qchopplantedpalmtree,qchopsleeper,qchopsleeper2" icon="ui_chop" />
-    <item id="cut" name="Cut" esES="Cortar" code="CUSTOMACTION" parameter="qcut" icon="ui_cut" />
-    <item id="dig" name="Dig" esES="Cavar" code="DIG" icon="ui_dig" />
-    <item id="mine" name="Mine" esES="Minar" code="MINE" icon="ui_mine" />
-    <item id="till" name="Till" esES="Arar" code="CUSTOMACTION" parameter="qtill,qtilljungle,qtillsand,qtillsnow" icon="ui_till" />
+    <item id="dig" name="Dig" code="DIG" icon="ui_dig" />
+    <item id="mine" name="Mine" code="MINE" icon="ui_mine" />
+    <item id="dcchop" name="Chop" code="CUSTOMACTION" parameter="qdcchop,qdcchoppine" icon="ui_chop" description="Fells trees for wood. Construction workers do it." />
+    <partedmagic name="Parted Magic" icon="ui_dcpm">
+        <item id="dceraserack" name="Erase" code="CUSTOMACTION" parameter="qeraserack" icon="ui_dceraserack" description="Wipes the drives of a rack whose customer moved out." />
+        <item id="dcgrade" name="Drive Grader" code="CUSTOMACTION" parameter="qgradeok,qgradeworn" icon="ui_dcgrade" description="Checks each drive and flags a worn one." />
+        <item id="dcclone" name="Clone" code="CUSTOMACTION" parameter="qclone" icon="ui_dcclone" description="Copies a flagged rack&apos;s drive to a new drive. No downtime." />
+        <item id="dcrescue" name="Rescue" code="CUSTOMACTION" parameter="qrescue" icon="ui_dcrescue" description="Puts a dead drive&apos;s data on a new drive. Slow." />
+        <item id="dcbootrepair" name="Boot Repair" code="CUSTOMACTION" parameter="qbootrepair" icon="ui_dcbootrepair" description="Fixes a rack that will not boot." />
+        <item id="dcvirusscan" name="Virus Scanner" code="CUSTOMACTION" parameter="qvirusscan" icon="ui_dcvirusscan" description="Cleans a rack that has malware." />
+        <item id="dcpwreset" name="Password Reset" code="CUSTOMACTION" parameter="qpwreset" icon="ui_dcpwreset" description="Lets a locked-out customer back into a rack." />
+        <item id="back" name="Back" code="BACK" icon="ui_back" />
+    </partedmagic>
 
-    <stockpiles name="Stockpiles" esES="Pilas" icon="ui_stockpile">
-        <item id="rawmaterials" name="Raw materials" esES="Materia prima" code="STOCKPILE" parameter="rawmaterials" icon="ui_srawmaterials" />
-        <item id="rawfood" name="Raw food" esES="Comida cruda" code="STOCKPILE" parameter="rawfood" icon="ui_srawfood" />
-        <item id="prepfood" name="Prepared food" esES="Comida preparada" code="STOCKPILE" parameter="prepfood" icon="ui_sprepfood" />
-        <item id="utils" name="Utilities" esES="Útiles" code="STOCKPILE" parameter="utils" icon="ui_sutils" />
-        <item id="furniture" name="Furniture" esES="Muebles" code="STOCKPILE" parameter="furniture" icon="ui_sfurniture" />
-        <item id="ites" name="ITEs" esES="ITEs" code="STOCKPILE" parameter="ites" icon="ui_sites" />
-        <item id="armor" name="Armor" esES="Armaduras" code="STOCKPILE" parameter="armor" icon="ui_sarmor" />
-        <item id="weapon" name="Weapons" esES="Armas" code="STOCKPILE" parameter="weapon" icon="ui_sweapon" />
-        <item id="decorative" name="Decorations" esES="Decorativo" code="STOCKPILE" parameter="decorative" icon="ui_sdecorative" />
-        <item id="back" name="Back" esES="Atrás" code="BACK" icon="ui_back" />
+    <stockpiles name="Stockpiles" icon="ui_stockpile">
+        <item id="rawmaterials" name="Raw materials" code="STOCKPILE" parameter="rawmaterials" icon="ui_srawmaterials" />
+        <!-- New, used and erased drives and the boxed gear (type hardware) -->
+        <item id="hardware" name="Hardware" code="STOCKPILE" parameter="hardware" icon="icon_mats_hardware" />
+        <item id="prepfood" name="Prepared food" code="STOCKPILE" parameter="prepfood" icon="ui_sprepfood" />
+        <item id="utils" name="Utilities" code="STOCKPILE" parameter="utils" icon="ui_sutils" />
+        <item id="furniture" name="Furniture" code="STOCKPILE" parameter="furniture" icon="ui_sfurniture" />
+        <item id="back" name="Back" code="BACK" icon="ui_back" />
     </stockpiles>
 
-    <zones name="Zones" esES="Zonas" icon="ui_zones">
-        <item id="zcarpentry" code="CREATEZONE" parameter="zcarpentry" icon="ui_zonescarpentry" />
-        <item id="zmasonry" code="CREATEZONE" parameter="zmasonry" icon="ui_zonesmasonry" />
-        <item id="zbakery" code="CREATEZONE" parameter="zbakery" icon="ui_zonesbakery" />
+    <zones name="Zones" icon="ui_zones">
         <item id="zdining" code="CREATEZONE" parameter="zdining" icon="ui_zonesdining" />
-        <item id="zforge" code="CREATEZONE" parameter="zforge" icon="ui_zonesforge" />
         <item id="zpersonal" code="CREATEZONE" parameter="zpersonal" icon="ui_zonespersonal" />
-        <item id="zkitchen" code="CREATEZONE" parameter="zkitchen" icon="ui_zoneskitchen" />
-        <item id="zhospital" code="CREATEZONE" parameter="zhospital" icon="ui_zoneshospital" />
-        <item id="zatelier" code="CREATEZONE" parameter="zatelier" icon="ui_zonesatelier" />
-        <item id="zarena" code="CREATEZONE" parameter="zarena" icon="ui_zonesarena" />
-        <item id="zbalcony" code="CREATEZONE" parameter="zbalcony" icon="ui_zonesbalcony" />
         <item id="ztavern" code="CREATEZONE" parameter="ztavern" icon="ui_zonestavern" />
-        <item id="ztavernroom" code="CREATEZONE" parameter="ztavernroom" icon="ui_zonestavernroom" />
+        <item id="zhospital" code="CREATEZONE" parameter="zhospital" icon="ui_zoneshospital" />
         <item id="zmarket" code="CREATEZONE" parameter="zmarket" icon="ui_zonesmarket" />
-        <item id="zbarracks" code="CREATEZONE" parameter="zbarracks" icon="ui_zonesbarracks" />
 
-        <item id="back" name="Back" esES="Atrás" code="BACK" icon="ui_back" />
+        <item id="back" name="Back" code="BACK" icon="ui_back" />
     </zones>
-    <item id="destroyscaffold" code="CUSTOMACTION" name="Destroy scaffolds" esES="Eliminar andamios" parameter="destroyscaffold" icon="ui_destroyscaffold"/>
-    <item id="cancel" name="Cancel order" esES="Cancelar orden" code="CANCELORDER" icon="ui_cancel" />
+    <item id="dcrepair" name="Repair" code="CUSTOMACTION" parameter="qrepairrack,qrepairswitch,qrepairgrid" icon="ui_dcrepair" description="Fixes wrecked gear with a box of spare parts." />
+    <item id="dcbury" name="Bury" code="CUSTOMACTION" parameter="qdcbury" icon="ui_dcbury" description="Buries a body in a grave, so no ghost walks. Construction workers do it." />
+    <item id="destroyscaffold" code="CUSTOMACTION" name="Destroy scaffolds" parameter="destroyscaffold" icon="ui_destroyscaffold"/>
+    <item id="cancel" name="Cancel order" code="CANCELORDER" icon="ui_cancel" />
 </menu>

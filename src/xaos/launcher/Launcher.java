@@ -25,10 +25,8 @@ import org.lwjgl.stb.STBTTFontinfo;
 import org.lwjgl.stb.STBTruetype;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import xaos.setup.FirstRunSetup;
-import xaos.setup.SteamLocator;
 
 /**
  * Branded pre-launch window: shown from Towns.main before the game window
@@ -37,14 +35,12 @@ import xaos.setup.SteamLocator;
  * LauncherConfig and startup proceeds exactly as before. Closing the window
  * (or Escape) exits instead of starting the game.
  *
- * The proprietary-asset setup lives here too: when data/graphics, data/audio
- * or data/fonts are missing, Play is disabled and the assets row offers to
- * copy them from a detected Steam Towns install or from a folder the player
- * picks (native tinyfd folder dialog, like FirstRunSetup's own flow). The
- * copy itself runs on a background thread so the window stays responsive;
- * detection, validation and copying are FirstRunSetup/SteamLocator logic,
- * reused, and FirstRunSetup.run() in Towns.main remains as a no-op safety
- * net once the assets exist.
+ * The assets row shows whether the game's own pictures, sounds and font
+ * (data/graphics, data/audio, data/fonts, shipped with the game) are in
+ * place; when one is missing, Play is disabled and the row says so.
+ * OpenTowns offered here to copy Towns' proprietary files from a Steam
+ * install; this game has its own and never uses Towns'.  FirstRunSetup.run()
+ * in Towns.main is the same check for startup without the launcher.
  *
  * Built on the same stack as the game itself: a GLFW window with
  * immediate-mode GL 1.x and a hand-rolled UI, no toolkit (AWT/Swing would
@@ -63,6 +59,10 @@ import xaos.setup.SteamLocator;
  * Escape hatch: -Dtowns.skipLauncher=true boots straight into the game.
  */
 public final class Launcher {
+
+    // Kept here rather than read from xaos.TownsProperties: the launcher
+    // touches nothing outside xaos.setup
+    private static final String GAME_NAME = "Parted Magic Server Room"; //$NON-NLS-1$
 
     private static final int WIDTH = 480;
     private static final int HEIGHT = 600;
@@ -112,13 +112,11 @@ public final class Launcher {
 
     private static int logoTexture;
 
-    // Proprietary-asset state. PRESENT gates the Play button; the copy runs
-    // on a background thread, so state and message are volatile.
-    private enum AssetState { PRESENT, MISSING, COPYING }
-    private static volatile AssetState assetState = AssetState.MISSING;
-    private static volatile String assetMessage = "";
-    private static volatile boolean assetMessageIsError;
-    private static Path steamInstallData; // validated data root of a detected Steam install
+    // Asset state. PRESENT gates the Play button.
+    private enum AssetState { PRESENT, MISSING }
+    private static AssetState assetState = AssetState.MISSING;
+    private static String assetMessage = "";
+    private static boolean assetMessageIsError;
 
     private static Font fontSmall;
     private static Font fontLabel;
@@ -185,7 +183,7 @@ public final class Launcher {
         GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
         // No context hints: a legacy-compatible context, like the game.
 
-        window = GLFW.glfwCreateWindow(WIDTH, HEIGHT, "OpenTowns", MemoryUtil.NULL, MemoryUtil.NULL);
+        window = GLFW.glfwCreateWindow(WIDTH, HEIGHT, GAME_NAME, MemoryUtil.NULL, MemoryUtil.NULL);
         if (window == MemoryUtil.NULL) {
             throw new IllegalStateException("Failed to create the launcher window");
         }
@@ -310,7 +308,8 @@ public final class Launcher {
     }
 
     private static void loadLogo() {
-        ByteBuffer encoded = readFile(brandingFile("OpenTowns.png", "OpenTowns.png"));
+        // Our window icon until the game has its own logo
+        ByteBuffer encoded = readFile(brandingFile("data/graphics/icon.png", "PartedMagicServerRoom.png"));
         if (encoded == null) {
             return;
         }
@@ -386,10 +385,10 @@ public final class Launcher {
         int headerBottom;
         if (logoTexture != 0) {
             drawLogo((WIDTH - 88) / 2f, 16, 88);
-            textCentered("OpenTowns", WIDTH / 2f, 110, SIZE_TITLE, COLOR_TEXT);
+            textCentered(GAME_NAME, WIDTH / 2f, 110, SIZE_TITLE, COLOR_TEXT);
             headerBottom = 142;
         } else {
-            textCentered("OpenTowns", WIDTH / 2f, 26, SIZE_TITLE, COLOR_TEXT);
+            textCentered(GAME_NAME, WIDTH / 2f, 26, SIZE_TITLE, COLOR_TEXT);
             headerBottom = 58;
         }
         line(margin, headerBottom, WIDTH - margin, headerBottom);
@@ -428,7 +427,7 @@ public final class Launcher {
         drawModList(margin, rowY, WIDTH - 2 * margin, MOD_ROWS_VISIBLE * MOD_ROW_HEIGHT + 8);
         rowY += MOD_ROWS_VISIBLE * MOD_ROW_HEIGHT + 8;
 
-        textCentered("Settings are saved to your Towns user folder when you press Play",
+        textCentered("Settings are saved when you press Play",
                 WIDTH / 2f, rowY + 8, SIZE_SMALL, COLOR_DIM);
 
         // Play, gated on the assets being in place
@@ -438,7 +437,7 @@ public final class Launcher {
     }
 
     // ------------------------------------------------------------------
-    // Proprietary-asset setup (detection and copy via xaos.setup)
+    // The game's own assets (shipped with it; checked via xaos.setup)
 
     private static void initAssetState() {
         if (FirstRunSetup.assetsPresent(FirstRunSetup.dataDir())) {
@@ -446,13 +445,8 @@ public final class Launcher {
             return;
         }
         assetState = AssetState.MISSING;
-        Path detected = SteamLocator.findTownsInstall();
-        steamInstallData = FirstRunSetup.validateSelection(detected);
-        if (steamInstallData != null) {
-            assetMessage = "Towns found at " + detected + ".";
-        } else {
-            assetMessage = "OpenTowns needs the assets from the original game (Towns on Steam).";
-        }
+        assetMessageIsError = true;
+        assetMessage = "Some game files are missing. Download the game again.";
     }
 
     private static void drawAssetsRow(float labelX, float y) {
@@ -461,71 +455,9 @@ public final class Launcher {
         float right = WIDTH - 32;
         if (assetState == AssetState.PRESENT) {
             text("Installed", right - textWidth("Installed", SIZE_LABEL), y, SIZE_LABEL, COLOR_DIM);
-        } else if (assetState == AssetState.COPYING) {
-            text("Copying...", right - textWidth("Copying...", SIZE_LABEL), y, SIZE_LABEL, COLOR_DIM);
         } else {
-            float buttonHeight = 24;
-            float browseWidth = 90;
-            float browseX = right - browseWidth;
-            if (smallButton(browseX, y - 4, browseWidth, buttonHeight, "Browse...")) {
-                browseForAssets();
-            }
-            if (steamInstallData != null) {
-                float copyWidth = 130;
-                if (smallButton(browseX - 8 - copyWidth, y - 4, copyWidth, buttonHeight, "Copy from Steam")) {
-                    startCopy(steamInstallData);
-                }
-            }
+            text("Missing", right - textWidth("Missing", SIZE_LABEL), y, SIZE_LABEL, COLOR_ERROR);
         }
-    }
-
-    /**
-     * Native folder picker (tinyfd, same as FirstRunSetup's fallback flow).
-     * Modal: the launcher window does not repaint while it is open.
-     */
-    private static void browseForAssets() {
-        String picked = TinyFileDialogs.tinyfd_selectFolderDialog(
-                "Select your Towns installation folder", System.getProperty("user.home", ""));
-        if (picked == null) {
-            return;
-        }
-        Path dataRoot = FirstRunSetup.validateSelection(Path.of(picked));
-        if (dataRoot == null) {
-            assetMessageIsError = true;
-            assetMessage = "That folder does not look like a Towns install (no data/graphics inside).";
-        } else {
-            startCopy(dataRoot);
-        }
-    }
-
-    /**
-     * Copies on a background thread so the window stays responsive; the
-     * tmp-then-rename scheme in FirstRunSetup.copyAssets keeps an interrupted
-     * copy (say, the player quits mid-way) from ever looking complete.
-     */
-    private static void startCopy(Path sourceData) {
-        assetState = AssetState.COPYING;
-        assetMessageIsError = false;
-        assetMessage = "Copying assets from " + sourceData + " ...";
-        Thread copier = new Thread(() -> {
-            try {
-                FirstRunSetup.copyAssets(sourceData, FirstRunSetup.dataDir());
-                if (FirstRunSetup.assetsPresent(FirstRunSetup.dataDir())) {
-                    assetState = AssetState.PRESENT;
-                    assetMessage = "";
-                } else {
-                    assetState = AssetState.MISSING;
-                    assetMessageIsError = true;
-                    assetMessage = "Copy finished but the assets are still missing.";
-                }
-            } catch (IOException e) {
-                assetState = AssetState.MISSING;
-                assetMessageIsError = true;
-                assetMessage = "Copy failed: " + e.getMessage();
-            }
-        }, "launcher-asset-copy");
-        copier.setDaemon(true);
-        copier.start();
     }
 
     private static void drawLogo(float x, float y, float size) {
@@ -687,16 +619,6 @@ public final class Launcher {
         float textW = textWidth(label, SIZE_BUTTON);
         text(label, x + (w - textW) / 2f, y + (h - SIZE_BUTTON) / 2f - 1, SIZE_BUTTON,
                 enabled ? COLOR_WHITE : COLOR_DIM);
-        return hover && mouseClicked;
-    }
-
-    private static boolean smallButton(float x, float y, float w, float h, String label) {
-        boolean hover = mouseOver(x, y, w, h);
-        setColor(hover ? COLOR_PANEL_HOVER : COLOR_PANEL);
-        rect(x, y, w, h);
-        outline(x, y, w, h);
-        float textW = textWidth(label, SIZE_SMALL);
-        text(label, x + (w - textW) / 2f, y + (h - SIZE_SMALL) / 2f - 1, SIZE_SMALL, COLOR_TEXT);
         return hover && mouseClicked;
     }
 

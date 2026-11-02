@@ -13,19 +13,20 @@ import java.util.stream.Stream;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 /**
- * First-run asset setup: if the proprietary Towns assets (data/graphics,
- * data/audio, data/fonts) are missing from the working directory, locate a
- * Steam Towns install (or ask the user for one) and copy them in.
+ * Startup asset check: the game's own pictures, sounds and font
+ * (data/graphics, data/audio, data/fonts) ship with it, and if one is
+ * missing run() says so and exits.
  *
  * Runs at the top of Towns.main, before any Game/GLFW/AL initialization;
- * TownsHeadless never calls it. The launcher (xaos.launcher) normally takes
- * care of the assets first through the public helpers here, making run() a
- * no-op; the run() dialog flow remains as the fallback for
- * -Dtowns.skipLauncher=true and launcher-less startup paths. The data/ folder names are hardcoded on
- * purpose: reading GRAPHICS_FOLDER etc. through Towns.getPropertiesString
- * would class-initialize Game, and a player who customized the folder layout
- * already has assets and never enters setup. Dialog text avoids quote
- * characters; the macOS tinyfd backend goes through osascript.
+ * TownsHeadless never calls it. The launcher (xaos.launcher) makes the same
+ * check first, making run() a no-op; run() covers -Dtowns.skipLauncher=true
+ * and launcher-less startup paths. OpenTowns used this class to find a
+ * Steam Towns install and copy Towns' proprietary files in; this game has
+ * its own and offers no copy, but the copy helpers below and SteamLocator
+ * stay, with their tests. The data/ folder names are hardcoded on purpose:
+ * reading GRAPHICS_FOLDER etc. through Towns.getPropertiesString would
+ * class-initialize Game. Dialog text avoids quote characters; the macOS
+ * tinyfd backend goes through osascript.
  */
 public final class FirstRunSetup {
 
@@ -46,40 +47,17 @@ public final class FirstRunSetup {
         return home.isEmpty() ? Path.of("data") : Path.of(home, "data");
     }
 
-    /** Returns normally when the assets are present; exits the JVM otherwise. */
+    /** Returns normally when the assets are present; says so and exits the JVM otherwise. */
     public static void run() {
         Path data = dataDir();
         if (assetsPresent(data)) {
             return;
         }
-
-        Path sourceData = null;
-        Path detected = SteamLocator.findTownsInstall();
-        if (detected != null && confirmDetected(detected)) {
-            sourceData = validateSelection(detected);
-        }
-        if (sourceData == null) {
-            sourceData = pickFolderLoop();
-        }
-
-        try {
-            copyAssets(sourceData, data);
-        } catch (IOException e) {
-            e.printStackTrace();
-            error("Copying the game assets failed:\n" + e.getMessage()
-                    + "\nNothing was left half-copied; run the game again to retry.");
-            System.exit(1);
-        }
-
-        if (!assetsPresent(data)) {
-            error("Setup finished but the assets are still missing.\n"
-                    + "Please copy data/graphics, data/audio and data/fonts\n"
-                    + "from your Towns install into " + data.toAbsolutePath() + " manually.");
-            System.exit(1);
-        }
-
-        TinyFileDialogs.tinyfd_messageBox("OpenTowns setup",
-                "Assets installed. Starting the game.", "ok", "info", true);
+        // No folder in the dialog: tinyfd refuses text with a quote in it,
+        // and a path may have one
+        System.out.println("Some game files are missing from " + data.toAbsolutePath() + ". Download the game again.");
+        error("Some game files are missing.\nDownload the game again.");
+        System.exit(1);
     }
 
     /** True when data/graphics, data/audio and data/fonts all exist and are non-empty. */
@@ -185,43 +163,9 @@ public final class FirstRunSetup {
         }
     }
 
-    // --- dialogs: the only tinyfd touchpoints, never reached by tests ---
-
-    private static boolean confirmDetected(Path install) {
-        return TinyFileDialogs.tinyfd_messageBox("OpenTowns setup",
-                "OpenTowns needs the graphics, audio and font assets from the original game.\n"
-                + "A Towns installation was found at:\n" + install.toAbsolutePath() + "\n"
-                + "Copy the assets from there?", "yesno", "question", true);
-    }
-
-    private static Path pickFolderLoop() {
-        while (true) {
-            String picked = TinyFileDialogs.tinyfd_selectFolderDialog(
-                    "Select your Towns installation folder", System.getProperty("user.home", ""));
-            if (picked == null) {
-                boolean exit = TinyFileDialogs.tinyfd_messageBox("OpenTowns setup",
-                        "OpenTowns cannot run without the assets from the original game\n"
-                        + "(Towns on Steam, app 221020). Exit setup?", "yesno", "question", true);
-                if (exit) {
-                    System.out.println("First-run setup cancelled. To set up manually, copy the");
-                    System.out.println("data/graphics, data/audio and data/fonts folders from your");
-                    System.out.println("Towns install into " + dataDir().toAbsolutePath() + ".");
-                    System.exit(0);
-                }
-                continue;
-            }
-            Path dataRoot = validateSelection(Path.of(picked));
-            if (dataRoot != null) {
-                return dataRoot;
-            }
-            TinyFileDialogs.tinyfd_messageBox("OpenTowns setup",
-                    "That folder does not look like a Towns installation\n"
-                    + "(no data/graphics inside). Please select the folder that\n"
-                    + "contains the Towns executable, or its data folder.", "ok", "error", true);
-        }
-    }
+    // --- the dialog: the only tinyfd touchpoint, never reached by tests ---
 
     private static void error(String message) {
-        TinyFileDialogs.tinyfd_messageBox("OpenTowns setup", message, "ok", "error", true);
+        TinyFileDialogs.tinyfd_messageBox("Parted Magic Server Room", message, "ok", "error", true);
     }
 }

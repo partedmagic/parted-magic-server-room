@@ -2,416 +2,123 @@
 <caravans>
 	<food>
 		<zone>zmarket</zone>
-		<pricePCT>300</pricePCT>
+		<pricePCT>150</pricePCT>
 		<coins>1d1000+1000</coins>
-		<buys>rawfood,prepfood.fruit,prepfood.baked,prepfood.cooked,decorative.special</buys>
-		<comePCT>100</comePCT>
+		<buys>prepfood.snacks</buys>
+		<comePCT>30</comePCT>
 
 		<item>
-			<type>rawfood</type>
-			<PCT>100</PCT>
-			<quantity>1d20+20</quantity>
-		</item>
-		<item>
-			<type>prepfood.fruit</type>
+			<type>prepfood.snacks</type>
 			<PCT>100</PCT>
 			<quantity>1d10+10</quantity>
-		</item>
-		<item>
-			<type>prepfood.baked</type>
-			<PCT>100</PCT>
-			<quantity>1d10+10</quantity>
-		</item>
-		<item>
-			<type>prepfood.cooked</type>
-			<PCT>80</PCT>
-			<quantity>1d20</quantity>
 		</item>
 	</food>
 
+	<!-- The fill dirt truck buys what digging turns up.  It sold concrete
+	     and steel until those came on order (xaos.datacenter.Supply) -->
 	<materials>
 		<zone>zmarket</zone>
-		<pricePCT>2d40+230</pricePCT>
+		<pricePCT>120</pricePCT>
 		<coins>1d1000+1000</coins>
-		<buys>rawmaterials.colors,rawmaterials.hides,rawmaterials.materials,rawmaterials.misc,decorative.special</buys>
-		<comePCT>100</comePCT>
-
-		<item>
-			<type>rawmaterials.colors</type>
-			<PCT>80</PCT>
-			<quantity>1d10+10</quantity>
-		</item>
-		<item>
-			<type>rawmaterials.hides</type>
-			<PCT>80</PCT>
-			<quantity>1d10</quantity>
-		</item>
-		<item>
-			<type>rawmaterials.materials</type>
-			<PCT>100</PCT>
-			<quantity>1d20+20</quantity>
-		</item>
-		<item>
-			<type>weapon.special</type>
-			<PCT>10</PCT>
-			<quantity>1</quantity>
-		</item>
-		<item>
-			<type>armor.special</type>
-			<PCT>10</PCT>
-			<quantity>1</quantity>
-		</item>
+		<buys>rawmaterials.materials</buys>
+		<comePCT>50</comePCT>
 	</materials>
 
-	<pinky>
+
+
+
+
+	<!-- The supplier truck: boxed hardware for coins (docs/rules.md).  It
+	     comes every morning and leaves at dusk (World.checkSupplierComes),
+	     with all of its stock: waiting days for drives or racks that a
+	     random stock left out made the hall stall (play of 2026-10-30) -->
+	<supplier>
 		<zone>zmarket</zone>
-		<pricePCT>1d50+300</pricePCT>
-		<coins>1d2000+2000</coins>
-		<buys>rawmaterials,rawmaterials.colors,rawmaterials.materials,decorative.special</buys>
+		<pricePCT>100</pricePCT>
+		<coins>1d500+500</coins>
+		<buys>hardware.erased</buys>
 		<comePCT>100</comePCT>
 
 		<item>
-			<type>furniture</type>
+			<id>dcdrive</id>
 			<PCT>100</PCT>
-			<quantity>1d20+20</quantity>
+			<quantity>8</quantity>
 		</item>
 		<item>
-			<type>decorative</type>
-			<PCT>50</PCT>
-			<quantity>1d5+5</quantity>
-		</item>
-		<item>
-			<type>decorative.indoor</type>
+			<id>dcrackkit</id>
 			<PCT>100</PCT>
-			<quantity>1d10+10</quantity>
-		</item>
-		<item>
-			<type>decorative.outdoor</type>
-			<PCT>60</PCT>
-			<quantity>1d10+15</quantity>
-		</item>
-		<item>
-			<type>armor.cloth</type>
-			<PCT>20</PCT>
-			<quantity>1d2+1</quantity>
-		</item>
-		<item>
-			<type>armor.special</type>
-			<PCT>10</PCT>
-			<quantity>1</quantity>
-		</item>
-	</pinky>
-
-	<militarybasic>
-		<zone>zmarket</zone>
-		<pricePCT>1d100+300</pricePCT>
-		<coins>1d2000+2000</coins>
-		<buys>armor.bone,armor.direite,armor.ghoulite,armor.goblinite,armor.gold,armor.hobgoblinite,armor.iron,armor.misc,armor.ogreite,armor.silver,armor.snickerite,armor.spiderite,armor.vanity,armor.wood,armor.zombite,weapon.bone,weapon.direite,weapon.ghoulite,weapon.goblinite,weapon.gold,weapon.hobgoblinite,weapon.iron,weapon.misc,weapon.ogreite,weapon.silver,weapon.snickerite,weapon.spiderite,weapon.stone,weapon.wood,weapon.zombite,decorative.special</buys>
-		<comePCT>100</comePCT>
-
-		<item>
-			<type>armor.iron</type>
-			<PCT>85</PCT>
-			<quantity>1d5</quantity>
-		</item>
-		<item>
-			<type>armor.wood</type>
-			<PCT>100</PCT>
-			<quantity>1d6</quantity>
-		</item>
-		<item>
-			<type>armor.cloth</type>
-			<PCT>80</PCT>
-			<quantity>1d6+1</quantity>
-		</item>
-		<item>
-			<type>weapon.iron</type>
-			<PCT>85</PCT>
-			<quantity>1d5</quantity>
-		</item>
-		<item>
-			<type>weapon.wood</type>
-			<PCT>100</PCT>
-			<quantity>1d6</quantity>
-		</item>
-		<item>
-			<type>weapon.special</type>
-			<PCT>30</PCT>
-			<quantity>1</quantity>
-		</item>
-		<item>
-			<type>armor.special</type>
-			<PCT>30</PCT>
-			<quantity>1</quantity>
-		</item>
-	</militarybasic>
-
-	<bones>
-		<zone>zmarket</zone>
-		<pricePCT>1d40+290</pricePCT>
-		<coins>1d1000+1000</coins>
-		<buys>rawmaterials.misc,armor.bone,weapon.bone,decorative.special</buys>
-		<comePCT>85</comePCT>
-
-		<item>
-			<type>armor.bone</type>
-			<PCT>80</PCT>
-			<quantity>1d5+2</quantity>
-		</item>
-		<item>
-			<type>weapon.bone</type>
-			<PCT>100</PCT>
-			<quantity>1d8+4</quantity>
-		</item>
-		<item>
-			<id>bonestairs</id>
-			<PCT>50</PCT>
-			<quantity>1d3</quantity>
-		</item>
-		<item>
-			<id>bonewall</id>
-			<PCT>50</PCT>
-			<quantity>1d10+5</quantity>
-		</item>
-		<item>
-			<id>bonebed</id>
-			<PCT>80</PCT>
-			<quantity>5</quantity>
-		</item>
-		<item>
-			<id>bonedoor</id>
-			<PCT>50</PCT>
-			<quantity>1d6</quantity>
-		</item>
-		<item>
-			<id>bonecarver</id>
-			<PCT>100</PCT>
-			<quantity>1d10+10</quantity>
-		</item>
-		<item>
-			<id>bonecandle</id>
-			<PCT>100</PCT>
-			<quantity>1d10+10</quantity>
-		</item>
-		<item>
-			<type>weapon.special</type>
-			<PCT>20</PCT>
-			<quantity>1</quantity>
-		</item>
-		<item>
-			<type>armor.special</type>
-			<PCT>20</PCT>
-			<quantity>1</quantity>
-		</item>
-	</bones>
-
-	<dwarven>
-		<zone>zmarket</zone>
-		<pricePCT>1d50+300</pricePCT>
-		<coins>1d2000+2000</coins>
-		<buys>rawmaterials,rawmaterials.colors,rawmaterials.materials,decorative.special</buys>
-		<comePCT>100</comePCT>
-
-		<item>
-			<type>weapon.iron</type>
-			<PCT>100</PCT>
-			<quantity>1d6+5</quantity>
-		</item>
-		<item>
-			<type>weapon.stone</type>
-			<PCT>100</PCT>
-			<quantity>1d6+5</quantity>
-		</item>
-		<item>
-			<type>armor.iron</type>
-			<PCT>100</PCT>
-			<quantity>1d6+5</quantity>
-		</item>
-		<item>
-			<id>rmiron</id>
-			<PCT>100</PCT>
-			<quantity>1d6+4</quantity>
-		</item>
-		<item>
-			<id>ironbars</id>
-			<PCT>100</PCT>
-			<quantity>1d6+4</quantity>
-		</item>
-		<item>
-			<id>anvil</id>
-			<PCT>90</PCT>
-			<quantity>1d2+1</quantity>
-		</item>
-		<item>
-			<id>rmstone</id>
-			<PCT>100</PCT>
-			<quantity>1d10+10</quantity>
-		</item>
-		<item>
-			<id>stoneladder</id>
-			<PCT>50</PCT>
-			<quantity>1d3</quantity>
-		</item>
-		<item>
-			<id>stonespindleladder</id>
-			<PCT>50</PCT>
-			<quantity>1d3</quantity>
-		</item>
-		<item>
-			<id>stonechair</id>
-			<PCT>50</PCT>
-			<quantity>1d6+4</quantity>
-		</item>
-		<item>
-			<id>stonetable</id>
-			<PCT>50</PCT>
-			<quantity>1d6+4</quantity>
-		</item>
-		<item>
-			<id>stonewindow</id>
-			<PCT>40</PCT>
-			<quantity>1d2+2</quantity>
-		</item>
-		<item>
-			<id>stonearcdoor1</id>
-			<PCT>30</PCT>
-			<quantity>1d4</quantity>
-		</item>
-		<item>
-			<id>stonearcdoor2</id>
-			<PCT>30</PCT>
-			<quantity>1d4</quantity>
-		</item>
-		<item>
-			<type>weapon.special</type>
-			<PCT>20</PCT>
-			<quantity>1</quantity>
-		</item>
-		<item>
-			<type>armor.special</type>
-			<PCT>20</PCT>
-			<quantity>1</quantity>
-		</item>
-	</dwarven>
-
-	<boat>
-		<zone>zmarket</zone>
-		<pricePCT>1d150+200</pricePCT>
-		<coins>1d1500+1000</coins>
-		<buys>weapon.wood,armor.wood,decorative.special</buys>
-		<comePCT>100</comePCT>
-
-		<item>
-			<type>weapon.wood</type>
-			<PCT>100</PCT>
-			<quantity>1d10+10</quantity>
-		</item>
-		<item>
-			<type>armor.wood</type>
-			<PCT>100</PCT>
-			<quantity>1d5+5</quantity>
-		</item>
-		<item>
-			<id>rmwood</id>
-			<PCT>100</PCT>
-			<quantity>1d15+12</quantity>
-		</item>
-		<item>
-			<id>woodenbed</id>
-			<PCT>80</PCT>
-			<quantity>1d3+2</quantity>
-		</item>
-		<item>
-			<id>woodenchair</id>
-			<PCT>80</PCT>
-			<quantity>1d5+3</quantity>
-		</item>
-		<item>
-			<id>woodencupboard</id>
-			<PCT>75</PCT>
-			<quantity>1d4</quantity>
-		</item>
-		<item>
-			<id>woodendoor</id>
-			<PCT>60</PCT>
 			<quantity>3</quantity>
 		</item>
 		<item>
-			<id>woodentable</id>
-			<PCT>80</PCT>
-			<quantity>1d7</quantity>
+			<id>dccoolerkit</id>
+			<PCT>100</PCT>
+			<quantity>2</quantity>
 		</item>
 		<item>
-			<id>squarestable</id>
-			<PCT>50</PCT>
-			<quantity>1d4</quantity>
-		</item>
-		<item>
-			<id>carpentrybench</id>
-			<PCT>40</PCT>
-			<quantity>1d3</quantity>
-		</item>
-		<item>
-			<id>wooddetailer</id>
-			<PCT>40</PCT>
-			<quantity>1d3</quantity>
-		</item>
-		<item>
-			<id>doorsignswords</id>
-			<PCT>40</PCT>
-			<quantity>1d4+2</quantity>
-		</item>
-		<item>
-			<type>weapon.special</type>
-			<PCT>10</PCT>
+			<id>dcswitchkit</id>
+			<PCT>100</PCT>
 			<quantity>1</quantity>
 		</item>
 		<item>
-			<type>armor.special</type>
-			<PCT>10</PCT>
+			<id>dcgeneratorkit</id>
+			<PCT>100</PCT>
 			<quantity>1</quantity>
 		</item>
-
 		<item>
-			<id>unifallowincage</id>
-			<PCT>10</PCT>
-			<quantity>1d4</quantity>
+			<id>dcsolarkit</id>
+			<PCT>100</PCT>
+			<quantity>3</quantity>
 		</item>
-
 		<item>
-			<id>birdincage</id>
-			<PCT>10</PCT>
-			<quantity>1d4</quantity>
+			<id>dcsmallgenkit</id>
+			<PCT>100</PCT>
+			<quantity>1</quantity>
 		</item>
-
 		<item>
-			<id>pigincage</id>
-			<PCT>10</PCT>
-			<quantity>1d4</quantity>
+			<id>dcbatterykit</id>
+			<PCT>100</PCT>
+			<quantity>2</quantity>
 		</item>
-
 		<item>
-			<id>skootenbeetenincage</id>
-			<PCT>10</PCT>
-			<quantity>1d4</quantity>
+			<id>dcpumpkit</id>
+			<PCT>100</PCT>
+			<quantity>1</quantity>
 		</item>
-
 		<item>
-			<id>snoatincage</id>
-			<PCT>10</PCT>
-			<quantity>1d4</quantity>
+			<id>dcwatercoolerkit</id>
+			<PCT>100</PCT>
+			<quantity>2</quantity>
 		</item>
-
 		<item>
-			<id>badgerincage</id>
-			<PCT>10</PCT>
-			<quantity>1d4</quantity>
+			<id>dcparts</id>
+			<PCT>100</PCT>
+			<quantity>4</quantity>
 		</item>
-
 		<item>
-			<id>sheepincage</id>
-			<PCT>10</PCT>
-			<quantity>1d4</quantity>
+			<id>dccamerakit</id>
+			<PCT>100</PCT>
+			<quantity>2</quantity>
 		</item>
-	</boat>
+		<item>
+			<id>dcguardpostkit</id>
+			<PCT>100</PCT>
+			<quantity>1</quantity>
+		</item>
+		<item>
+			<id>dcerasekit</id>
+			<PCT>100</PCT>
+			<quantity>1</quantity>
+		</item>
+		<item>
+			<id>dcvendingkit</id>
+			<PCT>100</PCT>
+			<quantity>1</quantity>
+		</item>
+		<item>
+			<id>dccoffeekit</id>
+			<PCT>100</PCT>
+			<quantity>1</quantity>
+		</item>
+	</supplier>
+
 </caravans>

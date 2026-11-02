@@ -19,8 +19,23 @@ import xaos.utils.UtilsXML;
 
 public class TerrainManager {
 
-    public final static String[] SLOPES_INIHEADER = {"", "_N", "_S", "_NS", "_E", "_NE", "_SE", "_W", "_NW", "_SW", "_EW", "_NSE", "_NSW", "_NEW", "_SEW", "_NSEW", "_nSEW", "_NsEW", "_NSeW", "_NSEw"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$ //$NON-NLS-12$ //$NON-NLS-13$ //$NON-NLS-14$ //$NON-NLS-15$ //$NON-NLS-16$ //$NON-NLS-17$ //$NON-NLS-18$ //$NON-NLS-19$ //$NON-NLS-20$
-//	public final static String[] SLOPES_INIHEADER = { "", "_N", "_S", "_NS", "_E", "_NE", "_SE", "_W", "_NW", "_SW", "_EW", "_NSE", "_NSW", "_NEW", "_SEW", "_NSEW"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$ //$NON-NLS-12$ //$NON-NLS-13$ //$NON-NLS-14$ //$NON-NLS-15$ //$NON-NLS-16$
+    // The solid neighbors on the cell's own level, as Towns names them; "_"
+    // is a cell with none (Terrain.checkSlope)
+    private final static String[] SLOPES_SIDES = {"_N", "_S", "_NS", "_E", "_NE", "_SE", "_W", "_NW", "_SW", "_EW", "_NSE", "_NSW", "_NEW", "_SEW", "_NSEW", "_"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$ //$NON-NLS-12$ //$NON-NLS-13$ //$NON-NLS-14$ //$NON-NLS-15$ //$NON-NLS-16$
+    // A corner and the two sides beside it
+    private final static String[][] SLOPES_CORNERS = {{"nw", "N", "W"}, {"ne", "N", "E"}, {"se", "S", "E"}, {"sw", "S", "W"}}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$ //$NON-NLS-12$
+    // "" (the flat block), every SLOPES_SIDES name, then each name with the
+    // corners between two solid sides that lie low because the cell across
+    // the corner is open: "_NSEW_ne" is all four sides solid with an open
+    // cell to the north-east.  Every cell around a corner then gives it the
+    // same height, so neighboring slopes meet without notches.
+    public final static String[] SLOPES_INIHEADER = slopeNames();
+    private final static HashMap<String, Integer> SLOPES_INDEX = new HashMap<String, Integer>();
+    static {
+        for (int i = 0; i < SLOPES_INIHEADER.length; i++) {
+            SLOPES_INDEX.put(SLOPES_INIHEADER[i], Integer.valueOf(i));
+        }
+    }
 
     private static HashMap<String, TerrainManagerItem> terrainList;
     private static ArrayList<Tile> terrainTiles;
@@ -149,6 +164,41 @@ public class TerrainManager {
         }
 
         return blockTiles.get(iID);
+    }
+
+    private static String[] slopeNames() {
+        ArrayList<String> alNames = new ArrayList<String>();
+        alNames.add(""); //$NON-NLS-1$
+        for (String sSides : SLOPES_SIDES) {
+            alNames.add(sSides);
+        }
+        for (String sSides : SLOPES_SIDES) {
+            ArrayList<String> alFree = new ArrayList<String>();
+            for (String[] corner : SLOPES_CORNERS) {
+                if (sSides.indexOf(corner[1]) != -1 && sSides.indexOf(corner[2]) != -1) {
+                    alFree.add(corner[0]);
+                }
+            }
+            for (int iMask = 1; iMask < (1 << alFree.size()); iMask++) {
+                StringBuilder sb = new StringBuilder(sSides).append('_');
+                for (int i = 0; i < alFree.size(); i++) {
+                    if ((iMask & (1 << i)) != 0) {
+                        sb.append(alFree.get(i));
+                    }
+                }
+                alNames.add(sb.toString());
+            }
+        }
+        return alNames.toArray(new String[alNames.size()]);
+    }
+
+    /**
+     * Index in SLOPES_INIHEADER of a name Terrain.checkSlope builds (0, the
+     * flat block, for a name it does not know)
+     */
+    public static int getSlopeIndex(String sSlope) {
+        Integer index = SLOPES_INDEX.get(sSlope);
+        return (index == null) ? 0 : index.intValue();
     }
 
     public static ArrayList<Integer> getTerrainsByGroup(String sGroup) {

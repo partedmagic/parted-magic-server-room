@@ -2,6 +2,7 @@ package xaos;
 
 import java.io.File;
 
+import xaos.datacenter.DataCenter;
 import xaos.main.Game;
 import xaos.main.World;
 import xaos.tiles.Cell;
@@ -120,7 +121,10 @@ public final class TownsHeadless {
         }
         System.out.println("[TownsHeadless] " + ticks + " ticks done (" + (System.currentTimeMillis() - lTime) + "ms)");
 
-        if (saveName != null) {
+        if (saveName != null && DataCenter.isSiteLost()) {
+            // A lost site is never saved (World's autosave skips it too)
+            System.out.println("[TownsHeadless] site lost, not saved");
+        } else if (saveName != null) {
             try {
                 Game.setSavegameName(saveName);
                 UtilsSavegame.save(true);

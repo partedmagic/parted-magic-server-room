@@ -153,7 +153,7 @@ public final class MatsUIPanel {
 
 		// Pages
 		sText = (matsIndexPages[getMatsPanelActive ()] + 1) + " / " + matsNumPages[getMatsPanelActive ()]; //$NON-NLS-1$
-		UtilsGL.drawString (sText, matsPanelPagesPositionPoint.x - UtilFont.getWidth (sText) / 2, matsPanelPagesPositionPoint.y, ColorGL.BLACK);
+		UtilsGL.drawString (sText, matsPanelPagesPositionPoint.x - UtilFont.getWidth (sText) / 2, matsPanelPagesPositionPoint.y, ColorGL.WHITE);
 		UtilsGL.glEnd ();
 	}
 

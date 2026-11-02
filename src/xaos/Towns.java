@@ -14,11 +14,9 @@ import java.util.Properties;
 import xaos.launcher.Launcher;
 import xaos.main.Game;
 import xaos.setup.FirstRunSetup;
-import xaos.utils.JNASteamAPI;
 import xaos.utils.Log;
 import xaos.utils.Messages;
 
-import com.sun.jna.Native;
 import xaos.property.Property;
 
 public final class Towns {
@@ -80,17 +78,6 @@ public final class Towns {
         propertiesMain.setProperty(key, absolute);
     }
 
-    public static boolean loadSteamAPI(String sLibName) {
-        try {
-            JNASteamAPI steamAPI = (JNASteamAPI) Native.loadLibrary(sLibName, JNASteamAPI.class);
-            steamAPI.SteamAPI_Init();
-            return true;
-        } catch (Throwable t) {
-        }
-
-        return false;
-    }
-
     public static void main(String[] args) {
 //		if (true) System.exit (0);
         // Pre-launch settings window (window size, audio, mods). Returns when
@@ -98,13 +85,13 @@ public final class Towns {
         // Skippable with -Dtowns.skipLauncher=true.
         Launcher.run();
 
-        // First run: fetch the proprietary assets from the player's Towns install
+        // Exits with a message when the game's own files are missing
         FirstRunSetup.run();
 
-        // Steam
-        if (!loadSteamAPI("steam_api")) {
-            loadSteamAPI("steam_api64");
-        }
+        // No Steam API: Towns loaded steam_api through JNA here, and this
+        // game uses no Steam library (no achievements or cloud saves).
+        // JNA's Mac library (2011, Intel and PowerPC only) also kept the
+        // Mac build from being notarized (2026-11-01)
 
         // Lanzamos la ventana principal
         try {

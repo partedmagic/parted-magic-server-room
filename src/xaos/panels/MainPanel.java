@@ -1,6 +1,7 @@
 package xaos.panels;
 
 import java.awt.Point;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 
 import xaos.compat.input.Mouse;
@@ -9,6 +10,10 @@ import xaos.TownsProperties;
 
 import xaos.campaign.TutorialFlow;
 import xaos.campaign.TutorialTrigger;
+import xaos.datacenter.Bear;
+import xaos.datacenter.Crew;
+import xaos.datacenter.DataCenter;
+import xaos.datacenter.Weather;
 import xaos.data.CitizenData;
 import xaos.data.EffectData;
 import xaos.data.EquippedData;
@@ -76,6 +81,8 @@ public final class MainPanel {
 	private static Tile MOUSE_ARROW_SOUTH = new Tile ("mouseArrowSouth"); //$NON-NLS-1$
 
 	public static final float TRANSPARENCY = (float) 0.4;
+	// How solid the ghost is drawn (xaos.datacenter.Bear)
+	private static final float GHOST_ALPHA = 0.65f;
 
 	public static int renderWidth = 1024;
 	public static int renderHeight = 600;
@@ -106,6 +113,13 @@ public final class MainPanel {
 
 	// LOCKED WALLCONNECTOR
 	private static Tile lockedConnectorTile = new Tile ("lockedconnector"); //$NON-NLS-1$
+
+	// Above a rack whose drive the Drive Grader flagged
+	private static Tile flaggedRackTile = new Tile ("dcflagmark"); //$NON-NLS-1$
+
+	// While placing: why the cell under the mouse is red, or null; renderTask
+	// works it out and the tooltip shows it
+	private static String placeReason;
 
 
 	public MainPanel () {
@@ -174,6 +188,43 @@ public final class MainPanel {
 	}
 
 
+	// Rain: how many streaks, and the frames drawn while the game runs (they
+	// stand still while it is paused)
+	private static final int RAIN_DROPS = 380;
+	private static int rainFrame;
+
+
+	/**
+	 * Light streaks falling across the screen.  Each streak's place and pace
+	 * come from its number, not from the game's dice, so drawing rain never
+	 * changes a seeded game.
+	 */
+	private static void renderRain () {
+		if (!Game.isPaused ()) {
+			rainFrame++;
+		}
+		int iSpan = renderHeight + 40;
+		GL11.glDisable (GL11.GL_TEXTURE_2D);
+		GL11.glEnable (GL11.GL_BLEND);
+		GL11.glBlendFunc (GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+		GL11.glColor4f (0.80f, 0.86f, 0.97f, 0.55f);
+		GL11.glBegin (GL11.GL_LINES);
+		for (int i = 0; i < RAIN_DROPS; i++) {
+			long lHash = (i + 1) * 2654435761L;
+			int x = (int) ((lHash >>> 7) % (renderWidth + 30));
+			int iSpeed = 9 + (int) ((lHash >>> 3) % 6);
+			int y = (int) (((lHash >>> 11) + (long) rainFrame * iSpeed) % iSpan) - 20;
+			// Slanted with the wind, and drifting with it as it falls
+			int xNow = x - (y / 4);
+			GL11.glVertex2f (xNow, y);
+			GL11.glVertex2f (xNow - 4, y + 14);
+		}
+		GL11.glEnd ();
+		GL11.glColor4f (1f, 1f, 1f, 1f);
+		GL11.glEnable (GL11.GL_TEXTURE_2D);
+	}
+
+
 	public static void render () {
 		int xView = Game.getWorld ().getView ().x;
 		int yView = Game.getWorld ().getView ().y;
@@ -230,6 +281,11 @@ public final class MainPanel {
 			renderTask (zView, iBaseXGeneral, iBaseYGeneral + Tile.TERRAIN_ICON_HEIGHT, null, iTextureID, cellXMin, cellYMin);
 		}
 		GL11.glDisable (GL11.GL_DEPTH_TEST);
+
+		// Rain falling over the map, under the interface (xaos.datacenter.Weather)
+		if (Weather.isRaining ()) {
+			renderRain ();
+		}
 
 		// Animation de los special tiles
 		World.updateSpecialTilesAnimation ();
@@ -863,6 +919,7 @@ public final class MainPanel {
 
 
 	public static void renderTask (int zView, int iBaseXGeneral, int iBaseYGeneral, Point3D pointTileMouse, int currentTextureID, int cellXMin, int cellYMin) {
+		placeReason = null;
 		// Tasks
 		if (pointTileMouse != null) {
 			if (Game.getCurrentState () == Game.STATE_CREATING_TASK && (Game.getCurrentTask ().getState () == Task.STATE_CREATING_ENDZONE || Game.getCurrentTask ().getState () == Task.STATE_CREATING_SINGLEPOINT)) {
@@ -1005,10 +1062,20 @@ public final class MainPanel {
 						}
 					}
 				}
+				// A roof's cells are checked and drawn on the level it goes
+				// on (Task.getRoofLevel), so marked from above the walls the
+				// outline sits there and not on the hall's floor below
+				if (bIteming && imi != null && imi.isDcRoof ()) {
+					Point3D p3dRoof = Game.getCurrentTask ().getState () == Task.STATE_CREATING_ENDZONE ? Game.getCurrentTask ().getPointIni () : pointTileMouse;
+					z3D = Task.getRoofLevel (p3dRoof.x, p3dRoof.y, z3D);
+				}
 				boolean bZoneOK = false;
 				if (zoning) {
 					// bZoneOK = Zone.areCellsAvailableForZone (zmi, x1, y1, x2, y2, zView, expandZone);
 					bZoneOK = Zone.areCellsAvailableForZone (zmi, x1, y1, x2, y2, z3D, expandZone);
+					if (!bZoneOK) {
+						placeReason = getZoneReason (zmi, x1, y1, x2, y2, z3D, expandZone);
+					}
 				}
 
 				boolean bDraw;
@@ -1047,8 +1114,15 @@ public final class MainPanel {
 									bUseMouseBad = true;
 								}
 							} else if (bIteming) {
-								if (!Item.isCellAvailableForItem (imi, i, j, z3D, true, true)) {
+								String sReason = Item.getCellUnavailableReason (imi, i, j, z3D, true, true, true, true);
+								if (sReason == null) {
+									sReason = DataCenter.getPlaceLimitReason (imi);
+								}
+								if (sReason != null) {
 									bUseMouseBad = true;
+									if (i == pointTileMouse.x && j == pointTileMouse.y) {
+										placeReason = getItemReason (imi, sReason);
+									}
 								} else {
 									// El item puede ir ahí, pero miraremos que no esté construyendo en el aire y no haya camino posible
 									if (imi.canBeBuiltOnHoles ()) {
@@ -1068,12 +1142,19 @@ public final class MainPanel {
 										}
 										if (bAllUnavailable) {
 											bUseMouseBad = true;
+											if (i == pointTileMouse.x && j == pointTileMouse.y) {
+												placeReason = Messages.getString ("MainPanel.placeUnreachable"); //$NON-NLS-1$
+											}
 										}
 									}
 								}
 							} else if (stockpiling) {
-								if (!Stockpile.isCellAvailableForStockpile (i, j, z3D)) {
+								String sReason = Stockpile.getCellUnavailableReason (i, j, z3D);
+								if (sReason != null) {
 									bUseMouseBad = true;
+									if (i == pointTileMouse.x && j == pointTileMouse.y) {
+										placeReason = Messages.getString (sReason);
+									}
 								}
 							} else if (zoning) {
 								if (!bZoneOK) {
@@ -1082,15 +1163,24 @@ public final class MainPanel {
 							} else if (mining) {
 								if (cell.isDiscovered () && cell.isMined ()) {
 									bUseMouseBad = true;
+									if (i == pointTileMouse.x && j == pointTileMouse.y) {
+										placeReason = Messages.getString ("MainPanel.placeDugOut"); //$NON-NLS-1$
+									}
 								}
 							} else if (digging) {
 								if (!cell.isDiscovered () && !cell.isDiggable ()) {
 									bUseMouseBad = true;
+									if (i == pointTileMouse.x && j == pointTileMouse.y) {
+										placeReason = Messages.getString ("Item.placeNotExplored"); //$NON-NLS-1$
+									}
 								}
 							} else {
 								// En otro caso
 								if (!cell.isDiscovered ()) {
 									bUseMouseBad = true;
+									if (i == pointTileMouse.x && j == pointTileMouse.y) {
+										placeReason = Messages.getString ("Item.placeNotExplored"); //$NON-NLS-1$
+									}
 								}
 							}
 
@@ -1149,6 +1239,58 @@ public final class MainPanel {
 		}
 
 		UtilsGL.glEnd ();
+	}
+
+
+	/**
+	 * The tooltip line for a key from Item.getCellUnavailableReason; the zone
+	 * one names the zones the item goes in
+	 */
+	private static String getItemReason (ItemManagerItem imi, String sKey) {
+		if ("Item.placeZone".equals (sKey) && imi != null && imi.getZones () != null) { //$NON-NLS-1$
+			StringBuilder sb = new StringBuilder ();
+			for (int i = 0; i < imi.getZones ().size (); i++) {
+				ZoneManagerItem zmi = ZoneManager.getItem (imi.getZones ().get (i));
+				if (zmi == null) {
+					continue;
+				}
+				if (sb.length () > 0) {
+					sb.append (' ').append (Messages.getString ("MainPanel.placeOr")).append (' '); //$NON-NLS-1$
+				}
+				sb.append (zmi.getName ().toLowerCase ());
+			}
+			return MessageFormat.format (Messages.getString (sKey), sb.toString ());
+		}
+		return Messages.getString (sKey);
+	}
+
+
+	/**
+	 * Why a zone cannot go on this area (Zone.areCellsAvailableForZone said
+	 * no), for the tooltip
+	 */
+	private static String getZoneReason (ZoneManagerItem zmi, int x1, int y1, int x2, int y2, int z, Zone zoneExpand) {
+		if (zoneExpand == null && ((x2 - x1 + 1) < zmi.getMinWidth () || (y2 - y1 + 1) < zmi.getMinHeight ())) {
+			return MessageFormat.format (Messages.getString ("MainPanel.placeZoneSize"), zmi.getName ().toLowerCase (), zmi.getMinWidth (), zmi.getMinHeight ()); //$NON-NLS-1$
+		}
+		for (int x = x1; x <= x2; x++) {
+			for (int y = y1; y <= y2; y++) {
+				if (!UtilsGeometry.isInsideMap (x, y, z)) {
+					continue;
+				}
+				Cell cell = World.getCell (x, y, z);
+				if (!cell.isDiscovered ()) {
+					return Messages.getString ("MainPanel.placeZoneNotExplored"); //$NON-NLS-1$
+				}
+				if (!LivingEntity.isCellAllowed (cell)) {
+					return Messages.getString ("MainPanel.placeZoneBlocked"); //$NON-NLS-1$
+				}
+				if (zoneExpand == null && cell.hasZone ()) {
+					return Messages.getString ("MainPanel.placeZoneTaken"); //$NON-NLS-1$
+				}
+			}
+		}
+		return Messages.getString ("MainPanel.placeZoneArea"); //$NON-NLS-1$
 	}
 
 
@@ -1344,9 +1486,22 @@ public final class MainPanel {
 			}
 
 			// (NO operativo) o item no construido (no operativo) (cruz roja)
-			if (!item.isOperative ()) {
+			// A rack that is down, or wrecked gear, stays operative so jobs
+			// can reach it; the data center marks it instead
+			if (!item.isOperative () || DataCenter.isDown (item.getID ())) {
 				currentTextureID = setColorShadowLightCell (cell, World.getTileRedCross (), zLevelOffset, currentTextureID, bFlatNearMouse);
 				UtilsGL.drawTextureZ (iXGeneral, iYSpecific, iXGeneral + tile.getTileWidth (), iYSpecific + tile.getTileHeight (), World.getTileRedCross ().getTileSetTexX0 (), World.getTileRedCross ().getTileSetTexY0 (), World.getTileRedCross ().getTileSetTexX1 (), World.getTileRedCross ().getTileSetTexY1 (), iDepth + addDepth);
+			}
+
+			// A rack whose drive the Drive Grader flagged: the amber sign
+			// above it, unlit so it shows at night (its LED alone was easy
+			// to miss)
+			ItemManagerItem imiFlagged = ItemManager.getItem (item.getIniHeader ());
+			if (imiFlagged != null && imiFlagged.isDcFlagged ()) {
+				int iYFlagged = iYSpecific - (flaggedRackTile.getTileHeight () / 2);
+				currentTextureID = UtilsGL.setTexture (flaggedRackTile, currentTextureID);
+				GL11.glColor3f (1f, 1f, 1f);
+				UtilsGL.drawTextureZ (iXGeneral, iYFlagged, iXGeneral + flaggedRackTile.getTileWidth (), iYFlagged + flaggedRackTile.getTileHeight (), flaggedRackTile.getTileSetTexX0 (), flaggedRackTile.getTileSetTexY0 (), flaggedRackTile.getTileSetTexX1 (), flaggedRackTile.getTileSetTexY1 (), iDepth + addDepth);
 			}
 		}
 
@@ -1594,7 +1749,15 @@ public final class MainPanel {
 				}
 				iYSpecific = iYGeneral - (le.getTileHeight () - Tile.TERRAIN_ICON_HEIGHT) + (int) le.getPositionOffset ().y;
 
-				currentTextureID = setColorShadowLightCell (cell, le, zLevelOffset, currentTextureID, false);
+				// The ghost (xaos.datacenter.Bear) glows: see-through, and
+				// unlit so it shows at night, the only time it walks
+				boolean bGhost = Bear.isGhost (le.getIniHeader ());
+				if (bGhost) {
+					currentTextureID = UtilsGL.setTexture (le, currentTextureID);
+					GL11.glColor4f (1f, 1f, 1f, GHOST_ALPHA);
+				} else {
+					currentTextureID = setColorShadowLightCell (cell, le, zLevelOffset, currentTextureID, false);
+				}
 				if (lemi.isFacingDirections ()) {
 					// Miramos si hay que hacer flip según la dirección donde mire
 					iFacingDirection = le.getFacingDirection ();
@@ -1606,6 +1769,9 @@ public final class MainPanel {
 					}
 				} else {
 					UtilsGL.drawTextureZ (iXSpecific, iYSpecific, iXSpecific + le.getTileWidth (), iYSpecific + le.getTileHeight (), le.getTileSetTexX0 (), le.getTileSetTexY0 (), le.getTileSetTexX1 (), le.getTileSetTexY1 (), iDepth);
+				}
+				if (bGhost) {
+					GL11.glColor4f (1f, 1f, 1f, 1f);
 				}
 			}
 
@@ -1901,6 +2067,32 @@ public final class MainPanel {
 	 * @param y Y de la celda en pantalla
 	 * @param pointTileMouse Celda a mostrar info
 	 */
+	// Widest line of an item's description in the map tooltip
+	private static final int TOOLTIP_WRAP_WIDTH = 560;
+
+
+	/**
+	 * @return the line broken at spaces into lines no wider than
+	 *         TOOLTIP_WRAP_WIDTH
+	 */
+	private static ArrayList<String> wrapTooltipLine (String sLine) {
+		ArrayList<String> alLines = new ArrayList<String> ();
+		StringBuilder sb = new StringBuilder ();
+		for (String sWord : sLine.split (" ")) { //$NON-NLS-1$
+			if (sb.length () > 0 && UtilFont.getWidth (sb + " " + sWord) > TOOLTIP_WRAP_WIDTH) { //$NON-NLS-1$
+				alLines.add (sb.toString ());
+				sb.setLength (0);
+			}
+			if (sb.length () > 0) {
+				sb.append (' ');
+			}
+			sb.append (sWord);
+		}
+		alLines.add (sb.toString ());
+		return alLines;
+	}
+
+
 	private static void renderTooltip (int x, int y, Point3D pointTileMouse) {
 		Cell cell;
 		// int iZ3D;
@@ -2034,10 +2226,27 @@ public final class MainPanel {
 					ItemManagerItem imi = ItemManager.getItem (item.getIniHeader ());
 					if (imi.getDescriptions () != null && imi.getDescriptions ().size () > 0) {
 						for (int d = 0; d < imi.getDescriptions ().size (); d++) {
-							alMessages.add (imi.getDescriptions ().get (d));
-							alColor.add (ColorGL.GRAY);
+							// Wrapped: a long description ran off the screen
+							for (String sLine : wrapTooltipLine (imi.getDescriptions ().get (d))) {
+								alMessages.add (sLine);
+								alColor.add (ColorGL.GRAY);
+							}
 						}
 
+						bNeedABlank = true;
+					}
+
+					// What to do about gear under the red cross or flagged:
+					// the job to pick on a right-click, or why a rack is down
+					// (Patrick, 2026-10-31: "it's not obvious what to do with
+					// the server with an x on it")
+					String sHint = DataCenter.getFixHint (item);
+					if (sHint != null) {
+						// Wrapped like the descriptions: an empty rack's line is long
+						for (String sLine : wrapTooltipLine (sHint)) {
+							alMessages.add (sLine);
+							alColor.add (ColorGL.WHITE);
+						}
 						bNeedABlank = true;
 					}
 
@@ -2101,9 +2310,9 @@ public final class MainPanel {
 						} else {
 							// Grupo
 							if (cit.getCitizenData ().getGroupID () != -1 && Game.getWorld ().getCitizenGroups ().getGroup (cit.getCitizenData ().getGroupID ()) != null) {
-								alMessages.add (cit.getCitizenData ().getFullName () + " (" + cit.getLivingEntityData ().getHealthStatus () + ") (" + Game.getWorld ().getCitizenGroups ().getGroup (cit.getCitizenData ().getGroupID ()).getName () + ")"); //$NON-NLS-1$ //$NON-NLS-2$);
+								alMessages.add (cit.getCitizenData ().getFullName () + ", " + Crew.getRoleName (cit) + " (" + cit.getLivingEntityData ().getHealthStatus () + ") (" + Game.getWorld ().getCitizenGroups ().getGroup (cit.getCitizenData ().getGroupID ()).getName () + ")"); //$NON-NLS-1$ //$NON-NLS-2$);
 							} else {
-								alMessages.add (cit.getCitizenData ().getFullName () + " (" + cit.getLivingEntityData ().getHealthStatus () + ")"); //$NON-NLS-1$ //$NON-NLS-2$);
+								alMessages.add (cit.getCitizenData ().getFullName () + ", " + Crew.getRoleName (cit) + " (" + cit.getLivingEntityData ().getHealthStatus () + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$);
 							}
 							alColor.add (ColorGL.YELLOW);
 						}
@@ -2167,7 +2376,9 @@ public final class MainPanel {
 							alColor.add (ColorGL.GRAY);
 							bNeedABlank = false;
 						}
-						if (lemi.getCaravan () != null) {
+						// No fighting: nothing but the crew can be hurt, so a
+						// ghost or a sheep says no "(healthy)"
+						if (lemi.getCaravan () != null || !TownsProperties.FIGHTING) {
 							alMessages.add (le.getLivingEntityData ().getName ());
 						} else {
 							alMessages.add (le.getLivingEntityData ().getName () + " (" + le.getLivingEntityData ().getHealthStatus () + ")"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -2203,6 +2414,13 @@ public final class MainPanel {
 		// alColor.add (ColorGL.ORANGE);
 		// alMessages.add ("max " + maxTilesWidthHeight);
 		// alColor.add (ColorGL.ORANGE);
+
+		// Placing something where it cannot go: why (renderTask)
+		if (placeReason != null) {
+			alMessages.add (placeReason);
+			alColor.add (ColorGL.ORANGE);
+		}
+
 		// Render
 		renderMessages (x, y, renderWidth, renderHeight, Tile.TERRAIN_ICON_WIDTH, alMessages, alColor);
 	}
@@ -2314,6 +2532,19 @@ public final class MainPanel {
 	}
 
 
+	/**
+	 * @return true while an item or building is being placed from the build
+	 *         menu (getMax3DMouse rests the cursor on wall tops then)
+	 */
+	private static boolean isPlacingItem () {
+		if (Game.getCurrentState () != Game.STATE_CREATING_TASK || Game.getCurrentTask () == null) {
+			return false;
+		}
+		int iTask = Game.getCurrentTask ().getTask ();
+		return iTask == Task.TASK_QUEUE_AND_PLACE || iTask == Task.TASK_QUEUE_AND_PLACE_AREA || iTask == Task.TASK_QUEUE_AND_PLACE_ROW || iTask == Task.TASK_CREATE_AND_PLACE || iTask == Task.TASK_CREATE_AND_PLACE_ROW || iTask == Task.TASK_BUILD;
+	}
+
+
 	public static Point3D getMax3DMouse (int x, int y, int z) {
 		int iX = x;
 		int iY = y;
@@ -2335,8 +2566,12 @@ public final class MainPanel {
 				if (item != null) {
 					imi = ItemManager.getItem (item.getIniHeader ());
 
-					// Objeto blocky
-					if (imi.isBlocky ()) {
+					// Objeto blocky, or a roof piece: the mouse stops on it on
+					// its own level, so it can be picked and destroyed there.
+					// It fell through to the hall's floor (Patrick,
+					// 2026-10-31: "If I go up to level 2 I can't even select
+					// the roof piece to delete it")
+					if (imi.isBlocky () || imi.isDcRoof ()) {
 						return new Point3D (iX, iY, iZ);
 					}
 				}
@@ -2354,8 +2589,18 @@ public final class MainPanel {
 					if (item != null) {
 						imi = ItemManager.getItem (item.getIniHeader ());
 
-						// Objeto base=true
-						if (imi.isBase ()) {
+						// Objeto base=true, or, while placing from the build
+						// menu, a wall: the cursor rests on top of a wall as in
+						// Towns, where walls were base.  Ours are not
+						// (protesters climbed them), so from a level up the
+						// cursor fell to the ground beside them (Patrick,
+						// 2026-10-31: "the mouse seems to always be stuck on
+						// level one").  Only while placing: for tools and the
+						// right-click menu a wall top in the line of sight
+						// caught the click meant for what lies behind it, and
+						// Bury on a body inside a wall did nothing ("bury a
+						// body doesn't work")
+						if (imi.isBase () || (imi.isWall () && isPlacingItem ())) {
 							return new Point3D (iX, iY, iZ);
 						}
 					}

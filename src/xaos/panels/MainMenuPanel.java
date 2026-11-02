@@ -50,6 +50,10 @@ public final class MainMenuPanel implements Runnable {
     private int imageLoadingHeight;
     private int imageTownsLogoWidth;
     private int imageTownsLogoHeight;
+    private int imageSMPLogoWidth;
+    private int imageSMPLogoHeight;
+    private int imageMainMenuWidth;
+    private int imageMainMenuHeight;
 
     private ContextMenu menu;
 
@@ -90,12 +94,15 @@ public final class MainMenuPanel implements Runnable {
 
         loadMenuTexture(false);
 
-        TextureData textureSMPLogo = UtilsGL.loadTexture(Towns.getPropertiesString(PropertyFile.PROPERTY_FILE_GRAPHICS, "SMP_LOGO_FILE"), GL11.GL_MODULATE); //$NON-NLS-1$
+        // The splash is a full screen picture, so it scales smoothly
+        TextureData textureSMPLogo = UtilsGL.loadTextureSmooth(Towns.getPropertiesString(PropertyFile.PROPERTY_FILE_GRAPHICS, "SMP_LOGO_FILE"), GL11.GL_MODULATE); //$NON-NLS-1$
         if (textureSMPLogo == null) {
             Log.log(Log.LEVEL_ERROR, Messages.getString("MainMenuPanel.21"), getClass().getName()); //$NON-NLS-1$
             Game.exit();
         }
         TEXTURE_SMP_LOGO_ID = textureSMPLogo.getTextureID();
+        imageSMPLogoWidth = textureSMPLogo.getWidth();
+        imageSMPLogoHeight = textureSMPLogo.getHeight();
 
         TextureData textureLoading = UtilsGL.loadTexture(Towns.getPropertiesString(PropertyFile.PROPERTY_FILE_GRAPHICS, "LOADING_FILE"), GL11.GL_REPLACE); //$NON-NLS-1$
         if (textureLoading == null) {
@@ -135,12 +142,20 @@ public final class MainMenuPanel implements Runnable {
     }
 
     public void loadMenuTexture(boolean bUnload) {
-        final TextureData textureMainMenu = UtilsGL.loadTexture(Towns.getPropertiesString(PropertyFile.PROPERTY_FILE_GRAPHICS, "MAINMENU_BG_FILE"), GL11.GL_REPLACE, true); //$NON-NLS-1$
+        // A full screen picture, so it scales smoothly; the smooth loader
+        // keeps no copy, so a reload (a mod turned on or off) lets the old
+        // texture go first
+        if (bUnload && TEXTURE_MAIN_MENU_ID != 0) {
+            GL11.glDeleteTextures(TEXTURE_MAIN_MENU_ID);
+        }
+        final TextureData textureMainMenu = UtilsGL.loadTextureSmooth(Towns.getPropertiesString(PropertyFile.PROPERTY_FILE_GRAPHICS, "MAINMENU_BG_FILE"), GL11.GL_REPLACE); //$NON-NLS-1$
         if (textureMainMenu == null) {
             Log.log(Log.LEVEL_ERROR, Messages.getString("MainMenuPanel.0"), getClass().getName()); //$NON-NLS-1$
             Game.exit();
         }
         TEXTURE_MAIN_MENU_ID = textureMainMenu.getTextureID(); //$NON-NLS-1$ //$NON-NLS-2$
+        imageMainMenuWidth = textureMainMenu.getWidth();
+        imageMainMenuHeight = textureMainMenu.getHeight();
     }
 
     public void createMenu() {
@@ -267,8 +282,18 @@ public final class MainMenuPanel implements Runnable {
 //            menuAux.setBorderColor(borderColor);
 //            menuTutorial.addItem(menuAux);
 
-            mainMenu.addItem(menuTutorial);
-            mainMenu.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
+            // Tutorial only when a tutorial campaign is loaded; the Towns one
+            // is set aside until the game has its own
+            boolean bAnyTutorial = false;
+            for (int i = 0; i < alCampaigns.size(); i++) {
+                if (alCampaigns.get(i).isTutorial()) {
+                    bAnyTutorial = true;
+                }
+            }
+            if (bAnyTutorial) {
+                mainMenu.addItem(menuTutorial);
+                mainMenu.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
+            }
             mainMenu.addItem(menuCampaign);
         }
 
@@ -367,43 +392,8 @@ public final class MainMenuPanel implements Runnable {
         // Blank
         mainMenu.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
 
-        // Servers
-		SmartMenu smServers = new SmartMenu(SmartMenu.TYPE_MENU, Messages.getString("MainMenuPanel.71"), mainMenu, null, null, null, null, textColor); //$NON-NLS-1$
-        smServers.setTrasparency(mainMenu.isTrasparency());
-        smServers.setBorderColor(borderColor);
-        smServers.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, Messages.getString("MainMenuPanel.71"), null, null, null, null)); //$NON-NLS-1$
-        smServers.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null, null));
-
-        ArrayList<String> alServerNames = Game.getServerNames();
-
-        if (alServerNames.size() > 0) {
-            String sServer;
-            for (int i = 0; i < alServerNames.size(); i++) {
-                sServer = alServerNames.get(i);
-
-                menuAux = new SmartMenu(SmartMenu.TYPE_TEXT, sServer, null, null, null, null, null, Color.YELLOW);
-                menuAux.setDynamic(true);
-                menuAux.setBorderColor(borderColor);
-                smServers.addItem(menuAux);
-                smServers.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.73") + sServer, null, CommandPanel.COMMAND_SERVER_REMOVE, Game.getServers().get(i))); //$NON-NLS-1$
-                smServers.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
-            }
-        } else {
-            // No servers
-            smServers.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, Messages.getString("MainMenuPanel.74"), null, null, null, null)); //$NON-NLS-1$
-            smServers.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
-        }
-
-        smServers.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.75"), null, CommandPanel.COMMAND_SERVER_ADD, null)); //$NON-NLS-1$
-        smServers.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
-        menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.7"), null, CommandPanel.COMMAND_BACK, null, null, null, textColor); //$NON-NLS-1$
-        menuAux.setBorderColor(borderColor);
-        smServers.addItem(menuAux);
-
-        mainMenu.addItem(smServers);
-
-        // Blank
-        mainMenu.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
+        // No Servers menu: it managed the Towns bury servers, and the
+        // townsmods.net one no longer answers
 
         // Options
         SmartMenu menuOptions = new SmartMenu(SmartMenu.TYPE_MENU, Messages.getString("MainMenuPanel.4"), mainMenu, null, null, null, null, textColor); //$NON-NLS-1$
@@ -497,22 +487,22 @@ public final class MainMenuPanel implements Runnable {
         menuAux.setDynamic(true);
         menuAux.setBorderColor(borderColor);
         menuOptionsGame.addItem(menuAux);
-        menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.32"), null, CommandPanel.COMMAND_MM_SWITCH_SIEGES, null, null, null, textColor); //$NON-NLS-1$
-        menuAux.setDynamic(true);
-        menuAux.setBorderColor(borderColor);
-        menuOptionsGame.addItem(menuAux);
-        menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.36"), null, CommandPanel.COMMAND_MM_SWITCH_SIEGE_PAUSE, null, null, null, textColor); //$NON-NLS-1$
-        menuAux.setDynamic(true);
-        menuAux.setBorderColor(borderColor);
-        menuOptionsGame.addItem(menuAux);
+        if (TownsProperties.FIGHTING) {
+            menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.32"), null, CommandPanel.COMMAND_MM_SWITCH_SIEGES, null, null, null, textColor); //$NON-NLS-1$
+            menuAux.setDynamic(true);
+            menuAux.setBorderColor(borderColor);
+            menuOptionsGame.addItem(menuAux);
+            menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.36"), null, CommandPanel.COMMAND_MM_SWITCH_SIEGE_PAUSE, null, null, null, textColor); //$NON-NLS-1$
+            menuAux.setDynamic(true);
+            menuAux.setBorderColor(borderColor);
+            menuOptionsGame.addItem(menuAux);
+        }
         menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.66"), null, CommandPanel.COMMAND_MM_SWITCH_CARAVAN_PAUSE, null, null, null, textColor); //$NON-NLS-1$
         menuAux.setDynamic(true);
         menuAux.setBorderColor(borderColor);
         menuOptionsGame.addItem(menuAux);
-        menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.62"), null, CommandPanel.COMMAND_MM_SWITCH_BURY, null, null, null, textColor); //$NON-NLS-1$
-        menuAux.setDynamic(true);
-        menuAux.setBorderColor(borderColor);
-        menuOptionsGame.addItem(menuAux);
+        // No "Allow bury system" option: burying towns is a Towns feature
+        // the game leaves off (towns.ini ALLOW_BURY)
         menuOptionsGame.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
         menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.7"), null, CommandPanel.COMMAND_BACK, null, null, null, textColor); //$NON-NLS-1$
         menuAux.setBorderColor(borderColor);
@@ -672,6 +662,25 @@ public final class MainMenuPanel implements Runnable {
         smCredits.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, Messages.getString("MainMenuPanel.34"), null, null, null, null)); //$NON-NLS-1$
         smCredits.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null, null));
 
+        // Our game first, then the team that made Towns
+        String[][] asOurCredits = {
+            {Messages.getString("MainMenuPanel.pm1"), "Parted Magic"}, //$NON-NLS-1$ //$NON-NLS-2$
+            {Messages.getString("MainMenuPanel.pm2"), Messages.getString("MainMenuPanel.pm3")}, //$NON-NLS-1$ //$NON-NLS-2$
+        };
+        for (String[] asCredit : asOurCredits) {
+            menuAux = new SmartMenu(SmartMenu.TYPE_TEXT, asCredit[0], null, null, null, null, null, creditsColor);
+            menuAux.setDynamic(true);
+            menuAux.setBorderColor(borderColor);
+            smCredits.addItem(menuAux);
+            menuAux = new SmartMenu(SmartMenu.TYPE_TEXT, asCredit[1], null, null, null, null, null, textColor);
+            menuAux.setDynamic(true);
+            menuAux.setBorderColor(borderColor);
+            smCredits.addItem(menuAux);
+            smCredits.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
+        }
+        smCredits.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, Messages.getString("MainMenuPanel.pm4"), null, null, null, null)); //$NON-NLS-1$
+        smCredits.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null, null));
+
         menuAux = new SmartMenu(SmartMenu.TYPE_TEXT, Messages.getString("MainMenuPanel.35"), null, null, null, null, null, creditsColor); //$NON-NLS-1$
         menuAux.setDynamic(true);
         menuAux.setBorderColor(borderColor);
@@ -798,17 +807,31 @@ public final class MainMenuPanel implements Runnable {
         }
     }
 
+    /**
+     * Draws the bound full screen picture (the splash, the title
+     * background) over the panel in its own shape: scaled to cover, the
+     * overflow cut evenly from both sides.  Towns drew these as a square as
+     * wide as the screen, so a square picture still shows as it did.
+     *
+     * @param color null to draw the picture as it is
+     */
+    private void drawCovering(int iImageWidth, int iImageHeight, ColorGL color) {
+        int centerX = (renderWidth - renderX) / 2;
+        int centerY = (renderHeight - renderY) / 2;
+        double dScale = Math.max((double) renderWidth / iImageWidth, (double) renderHeight / iImageHeight);
+        int iHalfWidth = (int) Math.ceil(iImageWidth * dScale / 2);
+        int iHalfHeight = (int) Math.ceil(iImageHeight * dScale / 2);
+        UtilsGL.glBegin(GL11.GL_QUADS);
+        if (color == null) {
+            UtilsGL.drawTexture(centerX - iHalfWidth, centerY - iHalfHeight, centerX + iHalfWidth, centerY + iHalfHeight, 0, 0, 1, 1);
+        } else {
+            UtilsGL.drawTexture(centerX - iHalfWidth, centerY - iHalfHeight, centerX + iHalfWidth, centerY + iHalfHeight, 0, 0, 1, 1, color);
+        }
+        UtilsGL.glEnd();
+    }
+
     public void render() {
         GL11.glColor4f(1, 1, 1, 1);
-
-        int iMaxSize = renderWidth;
-        if (renderHeight > iMaxSize) {
-            iMaxSize = renderHeight;
-        }
-        if (iMaxSize % 2 != 0) {
-            iMaxSize++;
-        }
-        iMaxSize /= 2;
 
         int centerX = (renderWidth - renderX) / 2;
         int centerY = (renderHeight - renderY) / 2;
@@ -817,9 +840,7 @@ public final class MainMenuPanel implements Runnable {
             // Pintamos el logo
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, TEXTURE_SMP_LOGO_ID);
             GL11.glTexEnvf(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_MODE, GL11.GL_MODULATE);
-            UtilsGL.glBegin(GL11.GL_QUADS);
-            UtilsGL.drawTexture(centerX - iMaxSize, centerY - iMaxSize, centerX + iMaxSize, centerY + iMaxSize, 0, 0, 1, 1, startingGameColor);
-            UtilsGL.glEnd();
+            drawCovering(imageSMPLogoWidth, imageSMPLogoHeight, startingGameColor);
             return;
         } else {
             if (deleteLogoTexture) {
@@ -833,9 +854,7 @@ public final class MainMenuPanel implements Runnable {
         // Pintamos el fondo
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, TEXTURE_MAIN_MENU_ID);
         GL11.glTexEnvf(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_MODE, GL11.GL_REPLACE);
-        UtilsGL.glBegin(GL11.GL_QUADS);
-        UtilsGL.drawTexture(centerX - iMaxSize, centerY - iMaxSize, centerX + iMaxSize, centerY + iMaxSize, 0, 0, 1, 1);
-        UtilsGL.glEnd();
+        drawCovering(imageMainMenuWidth, imageMainMenuHeight, null);
 
         // Pintamos el logo Towns
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, TEXTURE_TOWNS_LOGO_ID);
@@ -871,18 +890,18 @@ public final class MainMenuPanel implements Runnable {
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, Game.TEXTURE_FONT_ID);
             GL11.glTexEnvf(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_MODE, GL11.GL_MODULATE);
         }
-        UtilsGL.glBegin(GL11.GL_QUADS);
-        String sVersion = TownsProperties.GAME_VERSION;
+        // No version label (the play-through of 2026-10-30).  Only the
+        // demo text, in a batch of its own: an empty batch must not reach
+        // UtilsGL.glEnd here, which fills one with the red cross and needs a world
         if (TownsProperties.DEMO_VERSION) {
-            sVersion += " (demo)"; //$NON-NLS-1$
-        }
-        UtilsGL.drawStringWithBorder(sVersion, renderX + renderWidth - UtilFont.getWidth(sVersion) - 10, renderY + renderHeight - UtilFont.MAX_HEIGHT - 10, COLORGL_WHITE, COLORGL_BLACK);
+            UtilsGL.glBegin(GL11.GL_QUADS);
+            String sDemo = "(demo)"; //$NON-NLS-1$
+            UtilsGL.drawStringWithBorder(sDemo, renderX + renderWidth - UtilFont.getWidth(sDemo) - 10, renderY + renderHeight - UtilFont.MAX_HEIGHT - 10, COLORGL_WHITE, COLORGL_BLACK);
 
-        // Texto a la izquierda
-        if (TownsProperties.DEMO_VERSION) {
+            // Texto a la izquierda
             UtilsGL.drawStringWithBorder(Messages.getString("MainMenuPanel.23"), 11, renderY + renderHeight - UtilFont.MAX_HEIGHT - 10, COLORGL_WHITE, COLORGL_BLACK); //$NON-NLS-1$
+            UtilsGL.glEnd();
         }
-        UtilsGL.glEnd();
 
         if (!loadingGame && !isSettingSavegameName() && !isSettingHotkey() && !isSettingNewServer()) {
             // Pintamos el menú

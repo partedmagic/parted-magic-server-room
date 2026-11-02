@@ -140,7 +140,7 @@ final class LauncherConfig {
         keys.put("MODS", String.join(",", enabledMods));
 
         try (Writer out = Files.newBufferedWriter(file, StandardCharsets.ISO_8859_1)) {
-            out.write("# OpenTowns user settings. Loaded on top of the towns.ini next to the game.\n");
+            out.write("# Parted Magic Server Room user settings. Loaded on top of the towns.ini next to the game.\n");
             out.write("# Rewritten by the launcher and by the in-game options.\n");
             for (Map.Entry<String, String> entry : keys.entrySet()) {
                 out.write(entry.getKey() + " = " + entry.getValue() + "\n");

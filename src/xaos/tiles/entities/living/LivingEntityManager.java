@@ -106,7 +106,11 @@ public class LivingEntityManager {
      *
      * @return
      */
-    public static LivingEntityManagerItem getCaravanAtRandom() {
+    /**
+     * A truck at random by its caravans.xml comePCT, never the one named
+     * (the supplier, which World sends every morning)
+     */
+    public static LivingEntityManagerItem getCaravanAtRandom(String sSkipCaravan) {
         if (hmLivingEntities == null) {
             loadLivingEntities();
         }
@@ -118,7 +122,7 @@ public class LivingEntityManager {
 
         while (iterator.hasNext()) {
             lemi = iterator.next();
-            if (lemi.getCaravan() != null) {
+            if (lemi.getCaravan() != null && !lemi.getCaravan().equals(sSkipCaravan)) {
                 cmi = CaravanManager.getItem(lemi.getCaravan());
                 if (cmi != null && Utils.getRandomBetween(1, 100) <= cmi.getComePCT()) {
                     alCaravans.add(lemi);
@@ -131,6 +135,21 @@ public class LivingEntityManager {
         } else {
             return null;
         }
+    }
+
+    /**
+     * @return the truck (merchant) of the caravan named, or null
+     */
+    public static LivingEntityManagerItem getCaravan(String sCaravan) {
+        if (hmLivingEntities == null) {
+            loadLivingEntities();
+        }
+        for (LivingEntityManagerItem lemi : hmLivingEntities.values()) {
+            if (sCaravan.equals(lemi.getCaravan())) {
+                return lemi;
+            }
+        }
+        return null;
     }
 
     public static HateData getHateData(String sIniHeader) {

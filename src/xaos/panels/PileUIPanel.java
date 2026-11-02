@@ -170,7 +170,7 @@ public final class PileUIPanel {
 		UtilsGL.glBegin (GL11.GL_QUADS);
 
 		String sText = (pilePanelPageIndex + 1) + " / " + pilePanelMaxPages; //$NON-NLS-1$
-		UtilsGL.drawString (sText, pilePanelPagesPositionPoint.x - UtilFont.getWidth (sText) / 2, pilePanelPagesPositionPoint.y, ColorGL.BLACK);
+		UtilsGL.drawString (sText, pilePanelPagesPositionPoint.x - UtilFont.getWidth (sText) / 2, pilePanelPagesPositionPoint.y, ColorGL.WHITE);
 
 		if (menuPile != null) {
 			int iFirstIndex = pilePanelPageIndex * PILE_PANEL_MAX_ITEMS_PER_PAGE;

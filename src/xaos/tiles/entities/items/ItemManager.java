@@ -588,6 +588,19 @@ public class ItemManager {
                         item.setHappiness(UtilsXML.getChildValue(node.getChildNodes(), "happiness")); //$NON-NLS-1$
                     }
 
+                    // Data center: power, heat, cooling, network ports and income
+                    for (String sTag : ItemManagerItem.DC_TAGS) {
+                        String sAux = UtilsXML.getChildValue(node.getChildNodes(), sTag);
+                        if (!bModChangingValues || sAux != null) {
+                            item.setDataCenterValue(sTag, sAux);
+                        }
+                    }
+                    // The pictures it can show (the snacks)
+                    String sLooks = UtilsXML.getChildValue(node.getChildNodes(), "dcLooks"); //$NON-NLS-1$
+                    if (!bModChangingValues || sLooks != null) {
+                        item.setDcLooks(sLooks);
+                    }
+
                     // Se puede dormir ahí?
                     if (bModChangingValues) {
                         String sAux = UtilsXML.getChildValue(node.getChildNodes(), "usedToSleep"); //$NON-NLS-1$

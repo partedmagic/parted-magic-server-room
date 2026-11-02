@@ -20,6 +20,7 @@ import xaos.data.FocusData;
 import xaos.data.SoldierData;
 import xaos.data.SoldierGroupData;
 import xaos.data.SoldierGroups;
+import xaos.datacenter.Crew;
 import xaos.main.Game;
 import xaos.main.World;
 import xaos.panels.MessagesPanel;
@@ -2017,6 +2018,7 @@ public final class TaskManager implements Externalizable {
                 // Antes de mirar nada miramos si es una QUEUE normal o una QUEUE_AND_PLACE
                 if (action.getDestinationPoint() != null) {
                     boolean bBadAction = false;
+                    boolean bWaitForAccess = false;
 					// Queue and place
                     // Miramos que el item a crear quepa en destino
                     for (int i = 0; i < action.getQueue().size(); i++) {
@@ -2031,10 +2033,18 @@ public final class TaskManager implements Externalizable {
                                 break;
                             }
 
-                            if (!Item.isCellAvailableForItem(imi, action.getDestinationPoint(), true, true)) {
+                            if (!isDestinationFree(imi, action)) {
                                 removeAction(iIndex, false, null);
                                 bBadAction = true;
                                 break;
+                            }
+
+                            // A roof piece waits, still queued, until someone can
+                            // stand by it on its level or on the roof beside it:
+                            // the crew lays a roof from a ladder, then from the
+                            // roof (Task.hasRoofAccess)
+                            if (imi.isDcRoof() && !Task.hasRoofAccess(action.getDestinationPoint().x, action.getDestinationPoint().y, action.getDestinationPoint().z)) {
+                                bWaitForAccess = true;
                             }
 
                             break;
@@ -2049,7 +2059,7 @@ public final class TaskManager implements Externalizable {
                             }
 
                             ItemManagerItem imi = ItemManager.getItem(alItems.get(0));
-                            if (!Item.isCellAvailableForItem(imi, action.getDestinationPoint(), true, true)) {
+                            if (!isDestinationFree(imi, action)) {
                                 removeAction(iIndex, false, null);
                                 bBadAction = true;
                                 break;
@@ -2061,6 +2071,14 @@ public final class TaskManager implements Externalizable {
 
                     if (bBadAction) {
                         World.getCell(action.getDestinationPoint()).setFlagOrders(false);
+                        continue;
+                    }
+                    if (bWaitForAccess) {
+                        // To the wait list, which comes back four a turn, so
+                        // the jobs behind it get looked at (only eight are a
+                        // turn), and not into the not-possible hash: another
+                        // cell of the same roof may be next to the ladder
+                        customActionsWait.add(customActions.remove(iIndex));
                         continue;
                     }
                 }
@@ -3143,7 +3161,7 @@ public final class TaskManager implements Externalizable {
                 Citizen cit;
                 for (int i = 0; i < alCits.size(); i++) {
                     cit = alCits.get(i);
-                    if (cit != null && cit.getCitizenData() != null && !cit.getCitizenData().containsDeniedJob(iHaulID)) {
+                    if (cit != null && cit.getCitizenData() != null && !Crew.isJobDenied(cit, iHaulID)) {
                         iLibres++;
                     }
                 }
@@ -3185,7 +3203,7 @@ public final class TaskManager implements Externalizable {
             if (sPriorityID == null) {
                 return 0;
             } else {
-                if (alCits.get(0).getCitizenData().containsDeniedJob(sPriorityID)) {
+                if (Crew.isJobDenied(alCits.get(0), sPriorityID)) {
                     return -1;
                 } else {
                     return 0;
@@ -3215,7 +3233,7 @@ public final class TaskManager implements Externalizable {
             int iIniHeaderJob = UtilsIniHeaders.getIntIniHeader(sPriorityID);
             // Pillamos el primer aldeano como base que no tenga el job denegado
             for (int i = 0; i < alCits.size(); i++) {
-                if (!alCits.get(i).getCitizenData().containsDeniedJob(iIniHeaderJob)) {
+                if (!Crew.isJobDenied(alCits.get(i), iIniHeaderJob)) {
                     iIndexConJob = i;
                     break;
                 }
@@ -3230,7 +3248,7 @@ public final class TaskManager implements Externalizable {
             int iHeurTemp;
             int iIndex = iIndexConJob;
             for (int c = (iIndexConJob + 1); c < alCits.size(); c++) {
-                if (!alCits.get(c).getCitizenData().containsDeniedJob(iIniHeaderJob)) {
+                if (!Crew.isJobDenied(alCits.get(c), iIniHeaderJob)) {
                     iHeurTemp = UtilsGeometry.getDistance(alCits.get(c).getCoordinates(), p3d);
                     if (iHeurTemp < iHeur) {
                         iIndex = c;
@@ -3343,5 +3361,25 @@ public final class TaskManager implements Externalizable {
         out.writeObject(hmItemsOnAutomatedQueue);
         out.writeInt(automatedQueueTurns);
         out.writeObject(alProductionToRemove);
+    }
+
+    /**
+     * Whether the cell of a place order can take its item when a worker is
+     * about to take the job.  Something loose that landed on it after the
+     * order moves aside first (Item.moveLooseItemAside); when the cell still
+     * cannot take it, the order goes, and since 2026-11-01 the log says so
+     * instead of the order vanishing without a word.
+     */
+    private static boolean isDestinationFree(ItemManagerItem imi, Action action) {
+        Point3DShort p3d = action.getDestinationPoint();
+        if (Item.isCellAvailableForItem(imi, p3d, true, true)) {
+            return true;
+        }
+        Cell cell = World.getCell(p3d);
+        if (!cell.isEmpty() && Item.moveLooseItemAside(cell, p3d) && Item.isCellAvailableForItem(imi, p3d, true, true)) {
+            return true;
+        }
+        MessagesPanel.addMessage(MessagesPanel.TYPE_SYSTEM, java.text.MessageFormat.format(Messages.getString("TaskManager.orderDropped"), imi.getName().toLowerCase()), ColorGL.ORANGE, new Point3DShort(p3d.x, p3d.y, p3d.z)); //$NON-NLS-1$
+        return false;
     }
 }

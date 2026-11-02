@@ -150,7 +150,8 @@ public class CaravanData implements Externalizable {
                                 CaravanManagerItem cmi = CaravanManager.getItem(lemi.getCaravan());
                                 if (zone != null && cmi != null && cmi.getZone() != null && zone.getIniHeader().equals(cmi.getZone())) {
                                     setStatus(STATUS_IN_PLACE);
-                                    setTurnsToLeave(World.TIME_MODIFIER_DAY * 2);
+                                    // The supplier waits until dusk, the others until the night before the next supplier (World)
+                                    setTurnsToLeave(World.getTruckStayTurns(lemi.getCaravan()));
                                     TradeUIPanel.createTradePanelContent(this);
                                 }
                             } else {
@@ -546,8 +547,10 @@ public class CaravanData implements Externalizable {
     }
 
     public void setPricePCT(int pricePCT) {
-        if (pricePCT < 110) {
-            pricePCT = 110;
+        // Never below an item's own price.  Towns' floor of 110% is applied
+        // before the reputation moves the markup (CaravanManagerItem)
+        if (pricePCT < 100) {
+            pricePCT = 100;
         }
         this.pricePCT = pricePCT;
     }

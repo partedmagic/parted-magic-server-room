@@ -2,6 +2,7 @@ package xaos.utils;
 
 import java.util.ArrayList;
 
+import xaos.datacenter.Weather;
 import xaos.main.Game;
 import xaos.main.World;
 import xaos.tiles.Cell;
@@ -266,8 +267,8 @@ public final class AStarQueueItem {
                 checkNewNode(nodo, openList, nodo.x + 1, nodo.y - 1, nodo.z);
                 checkNewNode(nodo, openList, nodo.x + 1, nodo.y + 1, nodo.z);
 
-                if (nodo.z > 0 && World.getCell(nodo.x, nodo.y, nodo.z - 1).isMined()) {
-                    // Subir colinillas
+                if (nodo.z > 0 && World.getCell(nodo.x, nodo.y, nodo.z - 1).isMined() && !Weather.isRoofAt(nodo.x, nodo.y, nodo.z - 1)) {
+                    // Subir colinillas (not up through a roof)
                     checkNewNode(nodo, openList, nodo.x - 1, nodo.y, nodo.z - 1);
                     checkNewNode(nodo, openList, nodo.x, nodo.y - 1, nodo.z - 1);
                     checkNewNode(nodo, openList, nodo.x, nodo.y + 1, nodo.z - 1);
@@ -377,7 +378,8 @@ public final class AStarQueueItem {
             return false;
         }
 
-        if (isAllowed(x, y, z) && World.getCell(x, y, z - 1).isMined()) {
+        // Not down into a cell under a roof
+        if (isAllowed(x, y, z) && World.getCell(x, y, z - 1).isMined() && !Weather.isRoofAt(x, y, z - 1)) {
             if (!getClosedList()[x][y][z]) {
                 AStarNodo nodoAux = AStarNodo.getPoolInstance(x, y, z, currentNode, endPoint.x, endPoint.y, endPoint.z);
 

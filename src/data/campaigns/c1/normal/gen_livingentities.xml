@@ -55,14 +55,6 @@
 		<pointy>1d200-1</pointy>
 		<level>1d11</level>
 	</add>
-	<add id="werepig">
-		<entity>werepig</entity>
-		<qtty>1d2</qtty>
-		<pointx>1d200-1</pointx>
-		<pointy>1d200-1</pointy>
-		<level>1d11</level>
-	</add>
-
 	<add id="wildbadger">
 		<entity>wildbadger</entity>
 		<qtty>50</qtty>
@@ -87,19 +79,5 @@
 		<level>1d11</level>
 	</add>
 
-	<add id="froggy">
-		<entity>froggy</entity>
-		<qtty>15</qtty>
-		<pointx>1d200-1</pointx>
-		<pointy>1d200-1</pointy>
-		<level>1d11</level>
-	</add>
 
-	<add id="toady">
-		<entity>toady</entity>
-		<qtty>1</qtty>
-		<pointx>1d200-1</pointx>
-		<pointy>1d200-1</pointy>
-		<level>1d11</level>
-	</add>
 </gen_livingentities>

@@ -691,7 +691,10 @@ public class TradePanel {
                 setTransactionReady(true);
             }
         } else {
-            setTransactionReady(false);
+            // Nothing picked: Confirm sends the truck away, so an unwanted
+            // truck does not hold the loading dock for its two days
+            // (CaravanData.confirmTrade leaves when both lists are empty)
+            setTransactionReady(true);
         }
     }
 

@@ -10,6 +10,7 @@ import java.util.HashMap;
 import xaos.campaign.TutorialTrigger;
 import xaos.caravans.PricesManager;
 import xaos.data.BuryData;
+import xaos.datacenter.DataCenter;
 import xaos.main.Game;
 import xaos.main.World;
 import xaos.panels.MiniMapPanel;
@@ -376,6 +377,13 @@ public class Cell implements Externalizable {
 		checkConnectors (coord.x + 1, coord.y + 1, coord.z);
 		checkConnectors (coord.x, coord.y - 1, coord.z);
 		checkConnectors (coord.x, coord.y + 1, coord.z);
+		// Water pipes join a level above and below too (checkConnectorsPipes)
+		for (int iZ = coord.z - 1; iZ <= coord.z + 1; iZ += 2) {
+			checkConnectors (coord.x - 1, coord.y, iZ);
+			checkConnectors (coord.x + 1, coord.y, iZ);
+			checkConnectors (coord.x, coord.y - 1, iZ);
+			checkConnectors (coord.x, coord.y + 1, iZ);
+		}
 
 		// Si es un fluid blocker comprobamos las celdas adyacentes para que corra el agua
 		if (bCheckFluids) {
@@ -416,6 +424,8 @@ public class Cell implements Externalizable {
 				checkConnectorsWalls (x, y, z, item, imi);
 			} else if (imi.getFloorWalkSpeed () != 100) {
 				checkConnectorsRoads (x, y, z, item, imi);
+			} else if (imi.getDcWater () == DataCenter.WATER_PIPE) {
+				checkConnectorsPipes (x, y, z, item);
 			}
 		}
 	}
@@ -586,6 +596,49 @@ public class Cell implements Externalizable {
 				item.refreshDoorTile ();
 			}
 		}
+	}
+
+
+	/**
+	 * A water pipe joins the cells beside it (N, S, E, W, on its level or
+	 * one above or below, as DataCenter.neighborKeys) that hold a pipe, a
+	 * water pump or a water-cooled unit: dcpipe_NS and the like, or dcpipe on
+	 * its own.  Headless runs load no pictures.
+	 */
+	private static void checkConnectorsPipes (int x, int y, int z, Item item) {
+		if (Game.isHeadless ()) {
+			return;
+		}
+		StringBuffer sbConnectors = new StringBuffer ("_"); //$NON-NLS-1$
+		if (y > 0 && isWaterPart (x, y - 1, z)) {
+			sbConnectors.append ("N"); //$NON-NLS-1$
+		}
+		if (y < (World.MAP_HEIGHT - 1) && isWaterPart (x, y + 1, z)) {
+			sbConnectors.append ("S"); //$NON-NLS-1$
+		}
+		if (x < (World.MAP_WIDTH - 1) && isWaterPart (x + 1, y, z)) {
+			sbConnectors.append ("E"); //$NON-NLS-1$
+		}
+		if (x > 0 && isWaterPart (x - 1, y, z)) {
+			sbConnectors.append ("W"); //$NON-NLS-1$
+		}
+		String sName = sbConnectors.length () > 1 ? item.getIniHeader () + sbConnectors.toString () : item.getIniHeader ();
+		item.setTileSetCoordinates (sName, item.getIniHeader ());
+		item.setTileSetTexCoordinates ();
+	}
+
+
+	private static boolean isWaterPart (int x, int y, int z) {
+		for (int iZ = Math.max (0, z - 1); iZ <= Math.min (World.MAP_DEPTH - 1, z + 1); iZ++) {
+			Item item = World.getCell (x, y, iZ).getItem ();
+			if (item != null) {
+				ItemManagerItem imi = ItemManager.getItem (item.getIniHeader ());
+				if (imi != null && imi.getDcWater () != 0) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 

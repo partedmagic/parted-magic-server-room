@@ -7,7 +7,7 @@ Linux. Nothing is rescaled, so every size in the output is exactly the PNG the
 artist exported and nothing is upscaled past the master.
 
 Run this whenever the logo changes, then commit the resulting
-OpenTowns.ico / OpenTowns.icns / OpenTowns.png. jpackage bakes each one into
+PartedMagicServerRoom.ico / .icns / .png. jpackage bakes each one into
 the Windows launcher, the macOS .app and the Linux app-image respectively
 (see the jpackageImage task in build.gradle).
 
@@ -78,7 +78,7 @@ def build_png(path):
     path.write_bytes(load(256))
 
 
-build_ico(HERE / "OpenTowns.ico")
-build_icns(HERE / "OpenTowns.icns")
-build_png(HERE / "OpenTowns.png")
-print("Wrote OpenTowns.ico, OpenTowns.icns, OpenTowns.png")
+build_ico(HERE / "PartedMagicServerRoom.ico")
+build_icns(HERE / "PartedMagicServerRoom.icns")
+build_png(HERE / "PartedMagicServerRoom.png")
+print("Wrote PartedMagicServerRoom.ico, PartedMagicServerRoom.icns, PartedMagicServerRoom.png")

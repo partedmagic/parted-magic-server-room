@@ -1,69 +1,91 @@
-# OpenTowns
+# Parted Magic Server Room
 
-OpenTowns is an open restoration and modernization of [Towns][Towns game], the 2012 town-building indie game. It builds on the official release of the game's full source code, released under the GPLv3.
+A free game from Parted Magic LLC. You build and run a data center: install
+server racks, give them power, cooling and network ports, and keep them
+running for the customers who pay for them.
 
-The original game shipped against Java-6-era APIs and the long-abandoned LWJGL 2, which means today it cannot run at all on modern Macs and is increasingly fragile everywhere else.
+Drives wear out and servers break. Your technicians fix them with Parted
+Magic's tools. Drive Grader finds failing drives, Clone copies one to a new
+drive before it dies, Rescue brings back a dead one, and Erase wipes old
+drives before they are sold. Boot Repair, Virus Scanner and Password Reset
+handle the service calls.
 
-**Mission Statement:** Upgrade the original Towns code to run on Java 25 and LWJGL 3, bringing a beloved game back to life on modern machines.
+Your construction workers build the hall, its roof and the rooms the crew
+lives in. The crew needs food, beds under a roof and time off, and unhappy
+people quit. Power outages, heat waves, rain, protesters, copper thieves and
+a bear all cause trouble. The site is lost after three dawns in a row below
+zero coins, or when the whole crew is gone.
 
-# Status
+The game has a tutorial that covers the basics.
 
-The game compiles and runs from source on a Java 25 toolchain with LWJGL 3. Windowing, input, and audio were ported (GLFW window, OpenAL audio); the rendering code unchanged.
+# Download and play
 
-Only one player-visible fix over the original: text entry now follows the OS keyboard layout instead of hard-coding QWERTY.
+The game comes as a zip for Windows, macOS or Linux. Each zip has its own
+Java runtime, so you do not need to install Java.
 
-Hash-verified deterministic test suite was established in order to track potential variations from original simulation behavior.
+1. Unzip it to a folder you can write to, such as your Desktop.
+2. Start the game:
+   - Windows: `Parted Magic Server Room.exe` in the `Parted Magic Server Room` folder.
+   - macOS: `Parted Magic Server Room.app`.
+   - Linux: `Parted Magic Server Room/bin/Parted Magic Server Room`.
 
-See `src/README.md` for more information about source status.
+**Windows:** the game is not code-signed yet, so the first start shows a
+SmartScreen warning, "Windows protected your PC". Click **More info**, then
+**Run anyway**. Windows remembers the choice.
 
-# Download and Play
+**macOS:** the Mac version runs on Macs with Apple silicon. It is signed by
+Parted Magic LLC and notarized by Apple. The first time you open it, macOS
+asks whether to open an app downloaded from the internet. Click **Open**.
 
-Prebuilt, self-contained release candidates are published on the [Releases page][Releases] for Windows, macOS and Linux. They bundle their own Java runtime, so no separate Java install is needed.
+Saved games and settings are kept in a `.towns` folder in your home folder.
 
-1. Download the zip for your OS and unzip it to any writable location (for example your Desktop; do not run it from inside a read-only folder).
-2. Launch `OpenTowns` (`OpenTowns.exe` on Windows, `OpenTowns.app` on macOS, the `bin/OpenTowns` launcher on Linux).
-3. On first launch the game copies the proprietary assets from your own Towns install, exactly as the from-source build does (see below). You still need a copy of the original game for those assets.
+# Building from source
 
-**Windows:** the builds are not yet code-signed, so the first launch triggers a SmartScreen "Windows protected your PC" warning naming an unrecognized publisher. Click **More info**, then **Run anyway**; Windows remembers the choice for later launches.
+You need Git and Java 17 or later to run Gradle. On the first build, Gradle
+downloads a Java 25 JDK for the game if you do not have one.
 
-**macOS:** the builds are not yet code-signed, so the first launch is blocked by Gatekeeper as coming from an unidentified developer. Right-click (or Control-click) the app and choose **Open**, then confirm; macOS remembers the choice for later launches.
+Clone this repository, then run `./gradlew run` in it (`gradlew.bat run` on
+Windows). The game's pictures, sounds and font are in the repository, so
+nothing else is needed.
 
-# Building
-
-You need a copy of the original game (available on [Steam][Towns game]) for its assets, which are proprietary and not included here.
-
-1. Clone this repository.
-2. Run `./gradlew run` (or `gradlew.bat run` on Windows). Gradle bootstraps itself, including the correct JDK toolchain.
-
-On first launch the game looks for a Steam installation of Towns and offers to copy its `data/graphics`, `data/audio` and `data/fonts` folders over automatically; if none is found, it asks you to point at your Towns folder. Copying those three folders into `src/data/` by hand still works too.
+`./gradlew jpackageZip` builds the release zip for the computer it runs on,
+in `build/distributions/`. `./gradlew test` runs the tests. See
+[CONTRIBUTING.md](./CONTRIBUTING.md) for more.
 
 # Code License
 
-The source code is released under the [GNU GPL v3 license][LICENSE], as was the original code drop this project is forked from:
+The code is under the [GNU GPL v3][LICENSE], like the Towns code it is built
+on. You can use, study, change and share it. If you share a changed version,
+it must also be under the GPL, with its source code available. See the
+[LICENSE][] file for the full text.
 
-- You can use, study, and modify the code
-- You can redistribute it
-- If you distribute a modified version, you must also release it under GPL and make the source code available
+This game is a changed version of OpenTowns, which is a changed version of
+Towns. Parted Magic LLC made its changes in 2026.
 
-See the [LICENSE][] file for the full text. Third-party libraries bundled in the packaged releases are credited, with their licenses, in [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).
+Third-party libraries bundled in the packaged releases are credited, with
+their licenses, in [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).
 
-# Original Assets License Notice
+# Art License
 
-The original game assets (graphics, audio, and other media) are **not** covered by the code license. They remain the property of their respective authors:
+The game's own pictures and sounds, in `src/data/graphics` and `src/data/audio`, are released under the same [GNU GPL v3 license][LICENSE] as the code, except the splash screen.
 
-- They must NOT be included in this repository or any fork of it
-- They must NOT be redistributed without permission from their original authors
+The splash screen, `src/data/graphics/smplogo.png`, shows the Parted Magic logo. It is © Parted Magic LLC, all rights reserved, and is not released under the GPL. Anyone releasing their own version of the game must replace it with their own picture (`SMP_LOGO_FILE` in `src/graphics.ini` names the file).
 
-This repository contains only code and data that is safe to redistribute.
+As section 7 of GPL v3 allows, no rights are granted to use the Parted Magic name or logo as a trademark.
 
-# Community & Credits
+The text font, `src/data/fonts/cantarell_17.fnt` with its glyph sheet `src/data/graphics/cantarell_17.png`, is made from the Cantarell typeface and stays under its own license, the SIL Open Font License 1.1. See [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).
 
-Towns was created by its original developers, who graciously released the source code in 2026. This project would not exist without that decision.
+The original Towns assets (its graphics, audio and fonts) are not part of this game. They belong to their authors and must never be added to this repository or any fork of it.
 
-The Towns community Discord is the place to discuss ideas, mods, and the future of the game:
+# Credits
 
-[[Discord invite link](https://discord.gg/wAW28PkrwF)]
+Parted Magic Server Room is made by Parted Magic LLC.
+
+It is built on [Towns][Towns game], a town-building game from 2012. Its
+developers released the source code under the GNU GPL v3 in 2026. The
+[OpenTowns][OpenTowns] project moved that code to Java 25 and LWJGL 3, and
+this game started from its work.
 
 [Towns game]: https://store.steampowered.com/app/221020/Towns/
-[Releases]: https://github.com/OpenTowns/OpenTowns/releases
+[OpenTowns]: https://github.com/OpenTowns/OpenTowns
 [LICENSE]: ./LICENSE

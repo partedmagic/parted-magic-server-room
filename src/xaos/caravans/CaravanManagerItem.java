@@ -3,6 +3,7 @@ package xaos.caravans;
 import java.util.ArrayList;
 
 import xaos.data.CaravanData;
+import xaos.datacenter.DataCenter;
 import xaos.main.World;
 import xaos.panels.menus.SmartMenu;
 import xaos.tiles.entities.items.Item;
@@ -88,7 +89,8 @@ public class CaravanManagerItem {
         caravanData.setAlItems(alItems);
         caravanData.setStatus(CaravanData.STATUS_COMING);
         caravanData.setLivingId(livingID);
-        caravanData.setPricePCT(Utils.launchDice(getPricePCT()));
+        // Towns' floor of 110%, then the site's reputation moves it a little
+        caravanData.setPricePCT(DataCenter.getTruckPricePCT(Math.max(110, Utils.launchDice(getPricePCT()))));
         caravanData.setCoins(Utils.launchDice(getCoins()));
         caravanData.setStartingPoint(Point3DShort.getPoolInstance(x, y, z));
         caravanData.setTurnsToLeave(World.TIME_MODIFIER_DAY * 3);

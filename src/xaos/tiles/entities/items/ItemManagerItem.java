@@ -107,6 +107,36 @@ public class ItemManagerItem {
     // Text
     private boolean text;
 
+    // Data center (xaos.datacenter.DataCenter): kW given (+) or used (-),
+    // heat made, cooling given, network ports given (+) or used (-), coins a
+    // day while running, why a rack is down (DataCenter.DOWN_*), a rack whose
+    // failing drive Drive Grader has flagged (1), the chance in percent
+    // that a running rack of this type gets a service event at dawn, what
+    // kind of power source it is (DataCenter.SOURCE_*), its part in water
+    // cooling (DataCenter.WATER_*) and in security (DataCenter.SECURITY_*),
+    // and an item whose first job the technicians do on their own (1, a
+    // ripe tomato planter: Garden), and a roof (1: it never falls, and it
+    // keeps the rain off what is under it, Weather)
+    public static final String[] DC_TAGS = {"dcPower", "dcHeat", "dcCooling", "dcPorts", "dcIncome", "dcDown", "dcFlagged", "dcEventPCT", "dcSource", "dcWater", "dcSecurity", "dcPick", "dcRoof"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$ //$NON-NLS-12$ //$NON-NLS-13$
+    private int dcPower;
+    private int dcHeat;
+    private int dcCooling;
+    private int dcPorts;
+    private int dcIncome;
+    private int dcDown;
+    private int dcFlagged;
+    private int dcEventPCT;
+    private int dcSource;
+    private int dcWater;
+    private int dcSecurity;
+    private int dcPick;
+    private int dcRoof;
+
+    // Pictures one thing can show, graphics.ini names (items.xml dcLooks, a
+    // comma list): the item's ID picks one (Item.refreshTransients), so the
+    // snacks are a burger, a slice of pizza, a taco and so on
+    private String[] dcLooks;
+
     // Lights
     private int lightRadius;
     private int lightRed;
@@ -564,6 +594,123 @@ public class ItemManagerItem {
 
     public int getHappiness() {
         return happiness;
+    }
+
+    public void setDataCenterValue(String sTag, String sValue) {
+        int iValue = 0;
+        if (sValue != null && sValue.trim().length() > 0) {
+            try {
+                iValue = Integer.parseInt(sValue.trim());
+            } catch (NumberFormatException nfe) {
+                Log.log(Log.LEVEL_ERROR, "Bad " + sTag + " value [" + sValue + "] in [" + getIniHeader() + "]", getClass().toString()); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+            }
+        }
+        if ("dcPower".equals(sTag)) { //$NON-NLS-1$
+            dcPower = iValue;
+        } else if ("dcHeat".equals(sTag)) { //$NON-NLS-1$
+            dcHeat = iValue;
+        } else if ("dcCooling".equals(sTag)) { //$NON-NLS-1$
+            dcCooling = iValue;
+        } else if ("dcPorts".equals(sTag)) { //$NON-NLS-1$
+            dcPorts = iValue;
+        } else if ("dcIncome".equals(sTag)) { //$NON-NLS-1$
+            dcIncome = iValue;
+        } else if ("dcDown".equals(sTag)) { //$NON-NLS-1$
+            dcDown = iValue;
+        } else if ("dcFlagged".equals(sTag)) { //$NON-NLS-1$
+            dcFlagged = iValue;
+        } else if ("dcEventPCT".equals(sTag)) { //$NON-NLS-1$
+            dcEventPCT = iValue;
+        } else if ("dcSource".equals(sTag)) { //$NON-NLS-1$
+            dcSource = iValue;
+        } else if ("dcWater".equals(sTag)) { //$NON-NLS-1$
+            dcWater = iValue;
+        } else if ("dcSecurity".equals(sTag)) { //$NON-NLS-1$
+            dcSecurity = iValue;
+        } else if ("dcPick".equals(sTag)) { //$NON-NLS-1$
+            dcPick = iValue;
+        } else if ("dcRoof".equals(sTag)) { //$NON-NLS-1$
+            dcRoof = iValue;
+        }
+    }
+
+    public boolean isDataCenter() {
+        return dcPower != 0 || dcHeat != 0 || dcCooling != 0 || dcPorts != 0 || dcIncome != 0 || dcDown != 0;
+    }
+
+    public boolean isDcDown() {
+        return dcDown != 0;
+    }
+
+    public int getDcDown() {
+        return dcDown;
+    }
+
+    public int getDcEventPCT() {
+        return dcEventPCT;
+    }
+
+    public int getDcSource() {
+        return dcSource;
+    }
+
+    public int getDcWater() {
+        return dcWater;
+    }
+
+    public int getDcSecurity() {
+        return dcSecurity;
+    }
+
+    public boolean isDcPick() {
+        return dcPick != 0;
+    }
+
+    public boolean isDcRoof() {
+        return dcRoof != 0;
+    }
+
+    /**
+     * @return the pictures this thing can show, or null for its own only
+     */
+    public String[] getDcLooks() {
+        return dcLooks;
+    }
+
+    public void setDcLooks(String sLooks) {
+        if (sLooks == null || sLooks.trim().length() == 0) {
+            dcLooks = null;
+            return;
+        }
+        String[] looks = sLooks.split(","); //$NON-NLS-1$
+        for (int i = 0; i < looks.length; i++) {
+            looks[i] = looks[i].trim();
+        }
+        dcLooks = looks;
+    }
+
+    public boolean isDcFlagged() {
+        return dcFlagged != 0;
+    }
+
+    public int getDcPower() {
+        return dcPower;
+    }
+
+    public int getDcHeat() {
+        return dcHeat;
+    }
+
+    public int getDcCooling() {
+        return dcCooling;
+    }
+
+    public int getDcPorts() {
+        return dcPorts;
+    }
+
+    public int getDcIncome() {
+        return dcIncome;
     }
 
     public void setCanBeUsedToSleep(String sCanBeUsedToSleep) {

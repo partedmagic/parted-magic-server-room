@@ -11,6 +11,7 @@ error.log
 # These must never be committed to a public fork.
 # (original assets are not covered by the GPL code license)
 /src/lib/
-/src/data/graphics/
-/src/data/audio/
-/src/data/fonts/
+
+# src/data/graphics, audio and fonts are tracked: they hold this game's own
+# pictures, sounds and font, made by make_placeholders.py, which leaves a
+# PLACEHOLDERS marker in each.  Towns' files never belong there.

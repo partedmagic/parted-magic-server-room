@@ -14,6 +14,7 @@ import org.w3c.dom.NodeList;
 import xaos.Towns;
 import xaos.data.CitizenGroupData;
 import xaos.data.CitizenGroups;
+import xaos.datacenter.Crew;
 import xaos.main.Game;
 import xaos.main.World;
 import xaos.panels.CommandPanel;
@@ -222,7 +223,9 @@ public class ActionPriorityManager {
         // Añadimos 1 linea por cada priority (para poner/quitar)
         for (int i = 0; i < alPriorities.size(); i++) {
             ActionPriorityManagerItem apmi = getItem(alPriorities.get(i));
-            if (apmi != null) {
+            // A technician is never offered building, a construction worker
+            // never the data center's work (Crew)
+            if (apmi != null && !Crew.isForbidden(cit, alPriorities.get(i))) {
                 if (cit.getCitizenData().containsDeniedJob(alPriorities.get(i))) {
                     smAux = new SmartMenu(SmartMenu.TYPE_ITEM, apmi.getName(), null, CommandPanel.COMMAND_PROFESSIONS_ENABLE_ITEM, Integer.toString(iCitizenID), alPriorities.get(i), null, Color.GREEN);
                 } else {

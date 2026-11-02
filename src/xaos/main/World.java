@@ -27,6 +27,9 @@ import xaos.data.SiegeData;
 import xaos.data.SoldierData;
 import xaos.data.SoldierGroupData;
 import xaos.data.SoldierGroups;
+import xaos.datacenter.Crew;
+import xaos.datacenter.DataCenter;
+import xaos.datacenter.Supply;
 import xaos.dungeons.DungeonData;
 import xaos.dungeons.DungeonGenerator;
 import xaos.dungeons.DungeonManager;
@@ -1453,9 +1456,13 @@ public final class World implements Externalizable {
 		}
 
 		// Tenemos el punto de inicio, creamos aldeanos
+		// Technicians first, then construction workers (Crew)
 		for (int i = 0; i < MapGenerator.NUM_CITIZENS; i++) {
-			addNewLiving (null, LivingEntity.TYPE_CITIZEN, true, p3d.x, p3d.y, p3d.z);
+			addNewLiving (Crew.getStartingType (i), LivingEntity.TYPE_CITIZEN, true, p3d.x, p3d.y, p3d.z);
 		}
+
+		// The data center they arrive to
+		DataCenter.placeStartingKit (p3d.x, p3d.y, p3d.z);
 	}
 
 
@@ -1653,9 +1660,13 @@ public final class World implements Externalizable {
 			turn = 0;
 			date.addDay ();
 
-			// Autosave?
+			// Dawn: the data center's customers pay for the running racks
+			DataCenter.newDay ();
+
+			// Autosave?  Not a lost site: loading goes back to a dawn before
+			// the loss
 			int iSave = Game.getAutosaveDays ();
-			if (iSave > 0) {
+			if (iSave > 0 && !DataCenter.isSiteLost ()) {
 				currentAutosaveDays++;
 				if ((currentAutosaveDays % iSave) == 0) {
 					String sText = Messages.getString ("World.18"); //$NON-NLS-1$
@@ -1700,9 +1711,16 @@ public final class World implements Externalizable {
 				}
 			}
 
-			// Caravans
-			if (date.getDay () > 7 || date.getMonth () > 1 || date.getYear () > 1) {
-				if (turn % (TIME_MODIFIER_HOUR * 7) == 0) {
+			// Trucks from day 2 (Towns waited a week).  The supplier, the
+			// only way to grow the data center, comes every morning
+			// (SUPPLIER_HOUR, or the first hour after it that the dock is
+			// free) and leaves at dusk; the other trucks come at random
+			// after it has gone, and leave before the next morning
+			if (date.getDay () > 1 || date.getMonth () > 1 || date.getYear () > 1) {
+				int iHour = turn / TIME_MODIFIER_HOUR;
+				if (iHour >= SUPPLIER_HOUR && iHour <= SUPPLIER_LAST_HOUR) {
+					checkSupplierComes ();
+				} else if (iHour >= SUPPLIER_LEAVE_HOUR && iHour <= LAST_TRUCK_HOUR && turn % (TIME_MODIFIER_HOUR * 2) == 0) {
 					checkCaravansCome ();
 				}
 			}
@@ -1740,6 +1758,9 @@ public final class World implements Externalizable {
 			}
 			iIndex--;
 		}
+
+		// Data center: power, cooling and network for every rack
+		DataCenter.nextTurn ();
 
 		// Livings
 		aItems = livingsDiscovered.keySet ().toArray (new Integer [0]);
@@ -1996,7 +2017,7 @@ public final class World implements Externalizable {
 						}
 
 						if (p3dArrival != null) {
-							Citizen citizen = (Citizen) addNewLiving (null, LivingEntity.TYPE_CITIZEN, true, p3dArrival.x, p3dArrival.y, p3dArrival.z, true);
+							Citizen citizen = (Citizen) addNewLiving (Crew.getNewcomerType (), LivingEntity.TYPE_CITIZEN, true, p3dArrival.x, p3dArrival.y, p3dArrival.z, true);
 							if (citizen != null) {
 								iImmigrantsOK++;
 								ZonePersonal.assignZone (citizen, alZonesID.get (i).intValue ());
@@ -2171,6 +2192,9 @@ public final class World implements Externalizable {
 	 * Mira si llegan héroes. En ese caso los mete
 	 */
 	public void checkHeroesCome () {
+		if (!TownsProperties.FIGHTING) {
+			return;
+		}
 		if (Utils.getRandomBetween (1, 12) != 1) {
 			return;
 		}
@@ -2491,23 +2515,63 @@ public final class World implements Externalizable {
 	}
 
 
+	// The day the log last said a truck found no loading dock (not saved)
+	private transient int noDockWarnedDay = -1;
+
+	// The supplier truck's day: it comes this many hours after dawn, or
+	// the first hour after that the dock is free up to the last, and
+	// leaves at the leave hour (CaravanData), when the other trucks may
+	// start to come
+	public static final String SUPPLIER_CARAVAN = "supplier"; //$NON-NLS-1$
+	public static final int SUPPLIER_HOUR = 2;
+	public static final int SUPPLIER_LAST_HOUR = 8;
+	public static final int SUPPLIER_LEAVE_HOUR = 16;
+	// The last hour another truck may set out, so that it parks the same
+	// evening
+	private static final int LAST_TRUCK_HOUR = 20;
+
 	/**
-	 * Mira si llega una caravana
+	 * The supplier truck, once a day (Supply keeps the day it last came,
+	 * with the save)
+	 */
+	private void checkSupplierComes () {
+		if (currentCaravanData != null || !Supply.isSupplierDue ()) {
+			return;
+		}
+		LivingEntityManagerItem lemi = LivingEntityManager.getCaravan (SUPPLIER_CARAVAN);
+		if (lemi != null && sendCaravan (lemi)) {
+			Supply.supplierSent ();
+		}
+	}
+
+	/**
+	 * Mira si llega una caravana: 1 in 4 every 2 hours from the supplier's
+	 * leave hour to LAST_TRUCK_HOUR, any truck but the supplier
+	 * (caravans.xml's comePCT)
 	 */
 	public void checkCaravansCome () {
 		if (currentCaravanData != null) {
 			return;
 		}
 
-		if (Utils.getRandomBetween (1, 24) > 1) {
+		if (Utils.getRandomBetween (1, 4) > 1) {
 			return;
 		}
 
 		// Llega una caravana! (si puede)
-		LivingEntityManagerItem lemi = LivingEntityManager.getCaravanAtRandom ();
+		LivingEntityManagerItem lemi = LivingEntityManager.getCaravanAtRandom (SUPPLIER_CARAVAN);
 		if (lemi == null) {
 			return;
 		}
+		sendCaravan (lemi);
+	}
+
+	/**
+	 * Sends a truck to a free cell of its zone from the map's edge
+	 *
+	 * @return false when it cannot come (no zone, or no way in)
+	 */
+	private boolean sendCaravan (LivingEntityManagerItem lemi) {
 		CaravanManagerItem cmi = CaravanManager.getItem (lemi.getCaravan ());
 
 		// Miramos si la zona requerida existe
@@ -2551,7 +2615,13 @@ public final class World implements Externalizable {
 		}
 
 		if (alDestinations == null || alDestinations.size () == 0) {
-			return;
+			// No loading dock at all: the truck drives on, and the log says why
+			// once a day (outside the tutorial nothing else tells a player)
+			if (alDestinations == null && noDockWarnedDay != date.getDaysSinceStart ()) {
+				noDockWarnedDay = date.getDaysSinceStart ();
+				MessagesPanel.addMessage (MessagesPanel.TYPE_ANNOUNCEMENT, Messages.getString ("World.noDock"), ColorGL.ORANGE); //$NON-NLS-1$
+			}
+			return false;
 		}
 
 		// Tenemos puntos de destino, buscamos por donde sale
@@ -2568,24 +2638,42 @@ public final class World implements Externalizable {
 		}
 
 		if (p3dCome == null) {
-			return;
+			return false;
 		}
 
 		// Tenemos los 2 puntos, metemos la living y que vaya para allá
 		LivingEntity leCaravan = World.addNewLiving (lemi.getIniHeader (), lemi.getType (), true, p3dCome.x, p3dCome.y, p3dCome.z, true);
 		leCaravan.setDestination (p3dDestination);
 		String sCaravanMessage = Messages.getString ("World.19") + " (" + leCaravan.getLivingEntityData ().getName () + ")"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		if (Game.isCaravanPause ()) {
-			sCaravanMessage = sCaravanMessage + " " + Messages.getString ("World.22"); //$NON-NLS-1$ //$NON-NLS-2$
-		}
 		MessagesPanel.addMessage (MessagesPanel.TYPE_ANNOUNCEMENT, sCaravanMessage, ColorGL.ORANGE, p3dCome, leCaravan.getID ());
-
-		if (Game.isCaravanPause ()) {
-			Game.pause (false);
-		}
+		// "Pause the game when a truck comes" pauses once, when the truck
+		// parks and can trade (CaravanData.setStatus); here as well made two
+		// stops a truck
 
 		// Audio
 		UtilsAL.play ("fxcaravan"); //$NON-NLS-1$
+		return true;
+	}
+
+
+	/**
+	 * How long a truck that has just parked waits for a trade: the supplier
+	 * until its leave hour, the others until the hour before the next
+	 * supplier (the same day when they park after dawn), at least an hour
+	 * either way.  The day's turns start at dawn.
+	 */
+	public static int getTruckStayTurns (String sCaravan) {
+		int iNow = Game.getWorld ().getTurn ();
+		int iLeave;
+		if (SUPPLIER_CARAVAN.equals (sCaravan)) {
+			iLeave = SUPPLIER_LEAVE_HOUR * TIME_MODIFIER_HOUR;
+		} else {
+			iLeave = (SUPPLIER_HOUR - 1) * TIME_MODIFIER_HOUR;
+			if (iNow >= iLeave) {
+				iLeave += TIME_MODIFIER_DAY;
+			}
+		}
+		return Math.max (TIME_MODIFIER_HOUR, iLeave - iNow);
 	}
 
 
@@ -4448,7 +4536,8 @@ public final class World implements Externalizable {
 		LivingEntityManagerItem lemi = null;
 
 		if (type == LivingEntity.TYPE_CITIZEN) {
-			le = Citizen.getInstance ();
+			// A technician or a construction worker when the caller says which (Crew)
+			le = sIniHeader != null ? new Citizen (sIniHeader) : Citizen.getInstance ();
 		} else if (type == LivingEntity.TYPE_FRIENDLY) {
 			lemi = LivingEntityManager.getItem (sIniHeader);
 			le = new Friendly (lemi.getIniHeader ());

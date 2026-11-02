@@ -133,7 +133,7 @@ public final class ProfessionsUIPanel {
 		UtilsGL.glBegin (GL11.GL_QUADS);
 
 		String sText = (professionsPanelPageIndex + 1) + " / " + professionsPanelMaxPages; //$NON-NLS-1$
-		UtilsGL.drawString (sText, professionsPanelPagesPositionPoint.x - UtilFont.getWidth (sText) / 2, professionsPanelPagesPositionPoint.y, ColorGL.BLACK);
+		UtilsGL.drawString (sText, professionsPanelPagesPositionPoint.x - UtilFont.getWidth (sText) / 2, professionsPanelPagesPositionPoint.y, ColorGL.WHITE);
 
 		// Title
 		if (professionsPanelIsCitizen) {

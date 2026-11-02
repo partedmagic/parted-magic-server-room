@@ -55,15 +55,12 @@ if (osName.contains('win')) {
 }
 
 dependencies {
-    // The same libraries the Steam install vendored, sourced from Maven
-    // Central so a bare checkout compiles (src/lib is gitignored). JNA is
-    // the Steam API binding (optional at runtime, failure ignored); the
-    // TWL PNGDecoder feeds textures to GL. src/lib/xaos.jar is the original
-    // compiled game: reference only, must never be on the classpath or it
-    // can shadow the freshly built classes.
-    // Note: the vendored platform.jar (JNA platform utilities) turned out
-    // to be unused; no source imports com.sun.jna.platform. Dropped.
-    implementation 'net.java.dev.jna:jna:3.3.0'
+    // Sourced from Maven Central so a bare checkout compiles (src/lib is
+    // gitignored). The TWL PNGDecoder feeds textures to GL. A Towns
+    // install's lib/xaos.jar is the original compiled game: reference only,
+    // must never be on the classpath or it can shadow the freshly built
+    // classes. JNA (Towns' Steam API binding) is gone: this game uses no
+    // Steam library, and JNA's 2011 Mac library could not be notarized.
     implementation 'org.l33tlabs.twl:pngdecoder:1.0'
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
@@ -121,7 +118,6 @@ tasks.register('runHeadless', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'xaos.TownsHeadless'
     workingDir = file('src')
-    jvmArgs '-Djava.library.path=lib/native'
     jvmArgs '--enable-native-access=ALL-UNNAMED'
     jvmArgs '--sun-misc-unsafe-memory-access=allow'
     if (project.hasProperty('seed')) {
@@ -158,12 +154,11 @@ test {
 
 tasks.named('run') {
     // The game resolves towns.ini, graphics.ini, audio.ini and data/
-    // relative to the working directory. lib/native is only needed for
-    // steam_api.dll now; LWJGL 3 natives come from the Maven classifier jars.
+    // relative to the working directory. LWJGL 3 natives come from the
+    // Maven classifier jars.
     workingDir = file('src')
-    jvmArgs '-Djava.library.path=lib/native'
-    // JDK 25: JNA and LWJGL 2 load native code from the unnamed module;
-    // restricted native access will be blocked by default in a future JDK.
+    // JDK 25: LWJGL loads native code from the unnamed module; restricted
+    // native access will be blocked by default in a future JDK.
     jvmArgs '--enable-native-access=ALL-UNNAMED'
     // JDK 25: LWJGL 3's MemoryUtil still uses sun.misc.Unsafe memory
     // access, deprecated for removal (JEP 498). Opt in explicitly until
@@ -195,7 +190,16 @@ tasks.named('run') {
 // at $APPDIR via -Dtowns.home, because a jpackage launcher's working directory
 // is not the app dir (it is "/" on macOS: JDK-8306974). Everything the game
 // resolves relative to the CWD in dev therefore resolves under $APPDIR here.
-def appName = 'OpenTowns'
+//
+// appName is the name players see: the Windows .exe, the macOS .app and the
+// Linux launcher. The zip is named after the project instead (settings.gradle,
+// no spaces), which suits download links.
+def appName = 'Parted Magic Server Room'
+// The Windows .exe's Company field (jpackage --vendor; its default is "Unknown")
+def appVendor = 'Parted Magic LLC'
+// The macOS app's bundle identifier (jpackage's default is the main class,
+// xaos.Towns); the option exists only on macOS
+def macIdentifier = 'com.partedmagic.serverroom'
 // jpackage requires a plain numeric MAJOR.MINOR.PATCH; macOS additionally
 // requires MAJOR >= 1. Override per release with -PappVersion=1.2.3. RC status
 // is carried by the git tag / GitHub prerelease, not by this number.
@@ -203,10 +207,9 @@ def appVersion = (project.findProperty('appVersion') ?: '1.0.0').toString()
 def isMac = osName.contains('mac') || osName.contains('darwin')
 
 // Stage everything the packaged game needs into a single --input directory:
-// the app jar, every runtime dependency jar (LWJGL core + host natives, JNA,
+// the app jar, every runtime dependency jar (LWJGL core + host natives,
 // PNGDecoder), and the redistributable runtime content (the three .ini files
-// and the data/ tree). The proprietary asset folders stay out: they are
-// gitignored and the player's first-run setup copies them in.
+// and the data/ tree, with the game's own pictures, sounds and font).
 tasks.register('stageJpackageInput', Sync) {
     dependsOn tasks.named('jar')
     into layout.buildDirectory.dir('jpackage-input')
@@ -227,7 +230,7 @@ tasks.register('stageJpackageInput', Sync) {
     // reads the same files straight from packaging/icons/ (the working
     // directory is src/).
     from('packaging/icons') {
-        include 'OpenTowns.png'
+        include 'PartedMagicServerRoom.png'
     }
     from('packaging/icons/source') {
         include 'logo-16.png'
@@ -235,14 +238,113 @@ tasks.register('stageJpackageInput', Sync) {
         include 'logo-48.png'
         into 'icons'
     }
+    // The game's own pictures, sounds and font ship with it: make_placeholders.py
+    // (the game's tools folder) writes data/graphics, data/audio and
+    // data/fonts with a PLACEHOLDERS marker in each, which is not shipped.
+    // Towns' proprietary files never carry the marker, so a folder without
+    // it stops the build instead of being packaged.
     from('src/data') {
         into 'data'
-        // Defensive: exclude the proprietary assets in case a developer's
-        // working tree has them present (they are gitignored, not tracked).
-        exclude 'graphics/**'
-        exclude 'audio/**'
-        exclude 'fonts/**'
+        exclude '**/PLACEHOLDERS'
+        // Readable by everyone, whatever the files' modes here: pictures
+        // written owner-only went into the zip that way once
+        filePermissions { unix('rw-r--r--') }
+        dirPermissions { unix('rwxr-xr-x') }
     }
+    def ownAssetMarkers = ['graphics', 'audio', 'fonts'].collect { file("src/data/${it}/PLACEHOLDERS") }
+    // The markers are inputs, so a missing one makes the task run (and fail)
+    // even when nothing it copies has changed
+    inputs.files(ownAssetMarkers).withPropertyName('ownAssetMarkers')
+    doFirst {
+        ownAssetMarkers.each { marker ->
+            if (!marker.isFile()) {
+                throw new GradleException("${marker.parentFile} is missing or is not the game's own "
+                        + "(no PLACEHOLDERS marker). Run make_placeholders.py first; Towns' "
+                        + "proprietary files must never be packaged.")
+            }
+        }
+    }
+}
+
+// macOS release signing, only when asked for, on a Mac whose login keychain
+// holds the Developer ID key (unlocked: run it in the desktop session, not
+// over ssh):
+//   ./gradlew jpackageZip -PmacSignIdentity="Developer ID Application: ..."
+//       -PmacNotaryProfile=<notarytool keychain profile>
+// The identity makes jpackage sign the app; the profile then has Apple
+// notarize it, and the ticket is stapled to the app before it is zipped.
+def macSignIdentity = (project.findProperty('macSignIdentity') ?: '').toString()
+def macNotaryProfile = (project.findProperty('macNotaryProfile') ?: '').toString()
+
+// Apple's notary service looks inside jars too, and LWJGL's natives jars hold
+// dylibs signed only ad hoc, so they are signed with the Developer ID first,
+// in the staged copies of the jars.
+def signJarNatives = { File libDir, String identity ->
+    def work = layout.buildDirectory.dir('jpackage-natives').get().asFile
+    delete work
+    fileTree(libDir).matching { include '*.jar' }.each { File jar ->
+        def names = []
+        new java.util.zip.ZipFile(jar).withCloseable { zf ->
+            zf.entries().each { e ->
+                if (!e.directory && (e.name.endsWith('.dylib') || e.name.endsWith('.jnilib'))) {
+                    names << e.name
+                }
+            }
+        }
+        if (names.isEmpty()) {
+            return
+        }
+        java.nio.file.FileSystems.newFileSystem(jar.toPath(), [:]).withCloseable { fs ->
+            names.each { String name ->
+                def lib = new File(work, "${jar.name}/${name}")
+                lib.parentFile.mkdirs()
+                java.nio.file.Files.copy(fs.getPath(name), lib.toPath())
+                exec { commandLine 'codesign', '--force', '--timestamp', '--options', 'runtime', '--sign', identity, lib.absolutePath }
+                java.nio.file.Files.copy(lib.toPath(), fs.getPath(name), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            }
+        }
+        logger.lifecycle("Signed ${names.size()} native libraries in ${jar.name}")
+    }
+}
+
+// Sends the signed app to Apple's notary service and staples the ticket to it.
+// Apple's answer and its log go to build/notary/.
+def notarizeApp = { File app, String profile ->
+    def dir = layout.buildDirectory.dir('notary').get().asFile
+    delete dir
+    dir.mkdirs()
+    def upload = new File(dir, 'upload.zip')
+    exec { commandLine 'ditto', '-c', '-k', '--keepParent', app.absolutePath, upload.absolutePath }
+    logger.lifecycle("Notarizing ${app.name} (notarytool waits for Apple's answer)")
+    def out = new ByteArrayOutputStream()
+    def err = new ByteArrayOutputStream()
+    exec {
+        commandLine 'xcrun', 'notarytool', 'submit', upload.absolutePath,
+                '--keychain-profile', profile, '--wait', '--output-format', 'json'
+        standardOutput = out
+        errorOutput = err
+        ignoreExitValue = true
+    }
+    new File(dir, 'submit.json').text = out.toString()
+    def result
+    try {
+        result = new groovy.json.JsonSlurper().parseText(out.toString())
+    } catch (Exception e) {
+        throw new GradleException("notarytool gave no answer: ${out}${err}")
+    }
+    if (result.id) {
+        exec {
+            commandLine 'xcrun', 'notarytool', 'log', result.id.toString(),
+                    '--keychain-profile', profile, new File(dir, 'log.json').absolutePath
+            ignoreExitValue = true
+        }
+    }
+    logger.lifecycle("Notarization ${result.id}: ${result.status}")
+    if (result.status != 'Accepted') {
+        throw new GradleException("Notarization ${result.status}; Apple's answer and log are in ${dir}")
+    }
+    exec { commandLine 'xcrun', 'stapler', 'staple', app.absolutePath }
+    exec { commandLine 'xcrun', 'stapler', 'validate', app.absolutePath }
 }
 
 // Invoke the toolchain JDK's own jpackage so it matches the JDK 25 the game is
@@ -251,9 +353,11 @@ tasks.register('stageJpackageInput', Sync) {
 tasks.register('jpackageImage') {
     dependsOn 'stageJpackageInput'
     def inputDir = layout.buildDirectory.dir('jpackage-input')
+    def signedInputDir = layout.buildDirectory.dir('jpackage-input-signed')
     def destDir = layout.buildDirectory.dir('jpackage')
     def jarTask = tasks.named('jar')
     inputs.dir inputDir
+    inputs.property('macSignIdentity', macSignIdentity)
     outputs.dir destDir
     doLast {
         def launcher = javaToolchains.launcherFor(java.toolchain).get()
@@ -269,9 +373,6 @@ tasks.register('jpackageImage') {
                 '--enable-native-access=ALL-UNNAMED',
                 '--sun-misc-unsafe-memory-access=allow',
                 '-Dtowns.home=$APPDIR',
-                // Lets a player drop steam_api into the app dir for Steam
-                // features; harmless (and Steam stays optional) when absent.
-                '-Djava.library.path=$APPDIR',
         ]
         if (isMac) {
             // GLFW must own the first thread on macOS (see the run task).
@@ -283,14 +384,15 @@ tasks.register('jpackageImage') {
         // platform; all three are generated from packaging/icons/source/ by
         // packaging/icons/generate.py and committed under packaging/icons/.
         def iconFile = osName.contains('win')
-                ? file('packaging/icons/OpenTowns.ico')
-                : (isMac ? file('packaging/icons/OpenTowns.icns')
-                         : file('packaging/icons/OpenTowns.png'))
+                ? file('packaging/icons/PartedMagicServerRoom.ico')
+                : (isMac ? file('packaging/icons/PartedMagicServerRoom.icns')
+                         : file('packaging/icons/PartedMagicServerRoom.png'))
 
         def cmd = [
                 jpackageExe.absolutePath,
                 '--type', 'app-image',
                 '--name', appName,
+                '--vendor', appVendor,
                 '--app-version', appVersion,
                 '--input', inputDir.get().asFile.absolutePath,
                 '--main-jar', jarTask.get().archiveFileName.get(),
@@ -304,6 +406,22 @@ tasks.register('jpackageImage') {
         } else {
             logger.warn("jpackage: ${iconFile} missing; packaging without a custom icon")
         }
+        if (isMac) {
+            cmd += ['--mac-package-identifier', macIdentifier]
+            if (macSignIdentity) {
+                // A copy of the staged input, so the staging task's own
+                // output keeps the jars as they came
+                def signedInput = signedInputDir.get().asFile
+                delete signedInput
+                copy {
+                    from inputDir
+                    into signedInput
+                }
+                signJarNatives(new File(signedInput, 'lib'), macSignIdentity)
+                cmd[cmd.indexOf('--input') + 1] = signedInput.absolutePath
+                cmd += ['--mac-sign', '--mac-app-image-sign-identity', macSignIdentity]
+            }
+        }
         javaOptions.each { cmd += ['--java-options', it] }
 
         exec { commandLine cmd }
@@ -312,13 +430,51 @@ tasks.register('jpackageImage') {
 
 // Zip the app image for distribution. The classifier mirrors the LWJGL native
 // bundle so the three OS artifacts never collide (e.g. -windows, -macos-arm64).
-tasks.register('jpackageZip', Zip) {
-    dependsOn 'jpackageImage'
-    def classifier = lwjglNatives.replace('natives-', '')
-    archiveFileName = "${appName}-${appVersion}-${classifier}.zip"
-    destinationDirectory = layout.buildDirectory.dir('distributions')
-    from layout.buildDirectory.dir('jpackage')
-    from(rootDir) {
-        include 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'README.md', 'CHANGELOG.md'
+def zipClassifier = lwjglNatives.replace('natives-', '')
+def zipDocs = ['LICENSE', 'THIRD-PARTY-NOTICES.md', 'README.md', 'CHANGELOG.md']
+if (isMac) {
+    // On macOS, ditto makes the zip. jpackage signs the app bundle (ad hoc),
+    // and Gradle's Zip stores the bundle's symlinks as copies, which breaks
+    // the signature ("a sealed resource is missing or invalid"); macOS would
+    // then call a downloaded copy damaged. ditto keeps the links (2026-11-01).
+    tasks.register('jpackageZip') {
+        dependsOn 'jpackageImage'
+        def appDir = layout.buildDirectory.dir("jpackage/${appName}.app")
+        def stageDir = layout.buildDirectory.dir('jpackage-zip')
+        def zipFile = layout.buildDirectory.file("distributions/${rootProject.name}-${appVersion}-${zipClassifier}.zip")
+        inputs.dir layout.buildDirectory.dir('jpackage')
+        inputs.files(zipDocs.collect { file(it) })
+        inputs.property('macNotaryProfile', macNotaryProfile)
+        outputs.file zipFile
+        doLast {
+            if (macNotaryProfile && !macSignIdentity) {
+                throw new GradleException('-PmacNotaryProfile needs -PmacSignIdentity: Apple notarizes only Developer ID signed apps')
+            }
+            def stage = stageDir.get().asFile
+            def zip = zipFile.get().asFile
+            delete stage, zip
+            stage.mkdirs()
+            zip.parentFile.mkdirs()
+            def stagedApp = new File(stage, "${appName}.app")
+            exec { commandLine 'ditto', appDir.get().asFile.absolutePath, stagedApp.absolutePath }
+            if (macNotaryProfile) {
+                notarizeApp(stagedApp, macNotaryProfile)
+            }
+            copy {
+                from(rootDir) { include zipDocs }
+                into stage
+            }
+            exec { commandLine 'ditto', '-c', '-k', stage.absolutePath, zip.absolutePath }
+        }
+    }
+} else {
+    tasks.register('jpackageZip', Zip) {
+        dependsOn 'jpackageImage'
+        archiveFileName = "${rootProject.name}-${appVersion}-${zipClassifier}.zip"
+        destinationDirectory = layout.buildDirectory.dir('distributions')
+        from layout.buildDirectory.dir('jpackage')
+        from(rootDir) {
+            include zipDocs
+        }
     }
 }

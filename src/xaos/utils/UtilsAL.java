@@ -213,8 +213,14 @@ public final class UtilsAL {
         if (Game.isMusicON() || Game.isFXON()) {
             if (!isOpenALON()) {
                 if (!loadALData()) {
+                    // No sound device (or a sound file that would not load):
+                    // the game plays on in silence.  Towns quit here, so on a
+                    // computer with no sound output the game never started
+                    // (a Windows VM without a sound card, 2026-11-01)
                     Log.log(Log.LEVEL_ERROR, Messages.getString("UtilsAL.8"), "UtilsAL"); //$NON-NLS-1$ //$NON-NLS-2$
-                    Game.exit();
+                    destroy();
+                    hmAudio = null;
+                    return;
                 }
                 setOpenALON(true);
                 setMusicVolume(musicVolume);
@@ -231,6 +237,10 @@ public final class UtilsAL {
 
     public static void play(String sKey) {
         if (!Game.isMusicON() && !Game.isFXON()) {
+            return;
+        }
+        if (hmAudio == null) {
+            // No sound loaded (initAL found no device)
             return;
         }
 

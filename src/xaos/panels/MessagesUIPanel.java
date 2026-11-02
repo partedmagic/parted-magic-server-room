@@ -3,6 +3,7 @@ package xaos.panels;
 import java.awt.Point;
 import java.util.ArrayList;
 import org.lwjgl.opengl.GL11;
+import xaos.TownsProperties;
 import xaos.main.Game;
 import xaos.tiles.Tile;
 import xaos.utils.ColorGL;
@@ -147,7 +148,7 @@ public final class MessagesUIPanel {
 		GL11.glBindTexture (GL11.GL_TEXTURE_2D, Game.TEXTURE_FONT_ID);
 		GL11.glTexEnvf (GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_MODE, GL11.GL_MODULATE);
 		UtilsGL.glBegin (GL11.GL_QUADS);
-		UtilsGL.drawString (sText, messagePanelPagesPositionPoint.x - UtilFont.getWidth (sText) / 2, messagePanelPagesPositionPoint.y, ColorGL.BLACK);
+		UtilsGL.drawString (sText, messagePanelPagesPositionPoint.x - UtilFont.getWidth (sText) / 2, messagePanelPagesPositionPoint.y, ColorGL.WHITE);
 		UtilsGL.glEnd ();
 
 		// Mensajes
@@ -238,6 +239,7 @@ public final class MessagesUIPanel {
 		for (int i = 0; i < MessagesPanel.MAX_TYPES; i++) {
 			messageIconPoints[i] = new Point (UIPanel.PIXELS_TO_BORDER + i * (messageTiles[i].getTileWidth () + UIPanel.PIXELS_TO_BORDER), UIPanel.PIXELS_TO_BORDER);
 		}
+		hideFightingLogs (messageIconPoints);
 
 		// Iconos dentro del panel
 		// Los "tabs" (iconos gordos arriba)
@@ -267,12 +269,28 @@ public final class MessagesUIPanel {
 
 		// Posición de iconos (los 4 de arriba) dentro del panel (va aquí pq tienen que centrarse con el subpanel)
 		messagePanelIconPoints = new Point [MessagesPanel.MAX_TYPES];
-		int iSeparation = (MESSAGES_PANEL_SUBPANEL_WIDTH - (MessagesPanel.MAX_TYPES * messagePanelTiles[0].getTileWidth ())) / (MessagesPanel.MAX_TYPES + 1);
+		int iShown = TownsProperties.FIGHTING ? MessagesPanel.MAX_TYPES : 2;
+		int iSeparation = (MESSAGES_PANEL_SUBPANEL_WIDTH - (iShown * messagePanelTiles[0].getTileWidth ())) / (iShown + 1);
 		for (int i = 0; i < MessagesPanel.MAX_TYPES; i++) {
 			messagePanelIconPoints[i] = new Point (messagesPanelSubPanelPoint.x + iSeparation + (i * (messagePanelTiles[0].getTileWidth () + iSeparation)), messagesPanelPoint.y + tileMessagesPanel[1].getTileHeight ());
 		}
+		hideFightingLogs (messagePanelIconPoints);
 
 		// Ésto es para que parta los messages render
 		MessagesPanel.resize (MESSAGES_PANEL_WIDTH, MESSAGES_PANEL_HEIGHT);
+	}
+
+
+	/**
+	 * With no fighting there is no fighting log and no heroes log: their icons
+	 * go off the screen, where nothing draws or clicks them, and the system
+	 * log takes the fighting log's place.
+	 */
+	private static void hideFightingLogs (Point[] points) {
+		if (!TownsProperties.FIGHTING) {
+			points[MessagesPanel.TYPE_SYSTEM] = new Point (points[MessagesPanel.TYPE_COMBAT]);
+			points[MessagesPanel.TYPE_COMBAT] = new Point (UIPanel.OFF_SCREEN);
+			points[MessagesPanel.TYPE_HEROES] = new Point (UIPanel.OFF_SCREEN);
+		}
 	}
 }

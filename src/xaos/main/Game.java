@@ -34,6 +34,7 @@ import xaos.data.BuryData;
 import xaos.data.CitizenGroups;
 import xaos.data.Type;
 import xaos.data.Types;
+import xaos.datacenter.DataCenter;
 import xaos.dungeons.DungeonGenerator;
 import xaos.dungeons.DungeonManager;
 import xaos.effects.EffectManager;
@@ -103,7 +104,29 @@ public final class Game {
 	public final static int SAVEGAME_V14 = 6;
 	public final static int SAVEGAME_V14d = 7;
 	public final static int SAVEGAME_V14e = 8;
-	public final static int SAVEGAME_VERSION = SAVEGAME_V14e;
+	// Parted Magic Server Room: the data center's bills and dawns below zero,
+	// then its reputation and customers, then the day's pay, the grid outage
+	// and the batteries' charge, then the protest and the guards, then the
+	// technicians warned they will quit, then the rework's state (the
+	// supplier's day, the coming rain, the racks waiting to be wiped)
+	public final static int SAVEGAME_BILLS = 9;
+	public final static int SAVEGAME_CUSTOMERS = 10;
+	public final static int SAVEGAME_POWER = 11;
+	public final static int SAVEGAME_PROTESTS = 12;
+	public final static int SAVEGAME_MORALE = 13;
+	public final static int SAVEGAME_REWORK = 14;
+	public final static int SAVEGAME_CREW = 15;
+	// The bear's coming day, the bear on the site and the unburied bodies (Bear)
+	public final static int SAVEGAME_BEAR = 16;
+	// Tonight's copper thieves and those on the site (Thieves)
+	public final static int SAVEGAME_THIEVES = 17;
+	// The racks' cells at the last look and the customers still waiting for a
+	// rack: a new rack starts empty (DataCenter.noteNewRacks)
+	public final static int SAVEGAME_NEW_RACKS = 18;
+	// The day's diesel draw (DataCenter), the wall each copper thief breaks
+	// through and the holes they left (Thieves)
+	public final static int SAVEGAME_DIESEL = 19;
+	public final static int SAVEGAME_VERSION = SAVEGAME_DIESEL;
 	public static int SAVEGAME_LOADING_VERSION = 0;
 	public static boolean SAVE_MISSION = true;
 
@@ -298,7 +321,7 @@ public final class Game {
 		disabledGodsON = Boolean.parseBoolean (Towns.getPropertiesString ("DISABLED_GODS")); //$NON-NLS-1$
 		pauseStartON = Boolean.parseBoolean (Towns.getPropertiesString ("PAUSE_START")); //$NON-NLS-1$
 		setAutosaveDays (Towns.getPropertiesInt ("AUTOSAVE_DAYS", 0)); //$NON-NLS-1$
-		setSiegeDifficulty (Towns.getPropertiesInt ("SIEGES", SIEGE_DIFFICULTY_NORMAL)); //$NON-NLS-1$
+		setSiegeDifficulty (TownsProperties.FIGHTING ? Towns.getPropertiesInt ("SIEGES", SIEGE_DIFFICULTY_NORMAL) : SIEGE_DIFFICULTY_OFF); //$NON-NLS-1$
 		siegePause = Boolean.parseBoolean (Towns.getPropertiesString ("SIEGE_PAUSE")); //$NON-NLS-1$
 		caravanPause = Boolean.parseBoolean (Towns.getPropertiesString ("CARAVAN_PAUSE")); //$NON-NLS-1$
 		allowBury = Boolean.parseBoolean (Towns.getPropertiesString ("ALLOW_BURY")); //$NON-NLS-1$
@@ -622,6 +645,14 @@ public final class Game {
 
 		// Open cells
 		Cell.generateAllOpen ();
+
+		// The data center's status line and down racks, from this game's
+		// items; a new game starts with no bills run up and no dawns below
+		// zero (a loaded one has its own, UtilsSavegame)
+		if (bNewGame) {
+			DataCenter.reset ();
+		}
+		DataCenter.refresh ();
 
 		// Citizen groups (para los saves antiguos)
 		CitizenGroups citizenGroups = getWorld ().getCitizenGroups ();
@@ -1347,11 +1378,14 @@ public final class Game {
 								World.removeTurnsPerSecond ();
 								MessagesPanel.addMessage (MessagesPanel.TYPE_SYSTEM, Messages.getString ("Game.6") + World.SPEED, ColorGL.YELLOW); //$NON-NLS-1$
 							}
+							// The key counts like the speed button for the tutorial
+							updateTutorialFlow (TutorialTrigger.TYPE_INT_ICONHIT, TutorialTrigger.ICON_INT_SPEEDDOWN, null);
 						} else if (iFN == UtilsKeyboard.FN_SPEED_UP) {
 							if (World.SPEED < World.SPEED_MAX) {
 								World.addTurnsPerSecond ();
 								MessagesPanel.addMessage (MessagesPanel.TYPE_SYSTEM, Messages.getString ("Game.6") + World.SPEED, ColorGL.YELLOW); //$NON-NLS-1$
 							}
+							updateTutorialFlow (TutorialTrigger.TYPE_INT_ICONHIT, TutorialTrigger.ICON_INT_SPEEDUP, null);
 						} else if (iFN == UtilsKeyboard.FN_TOGGLE_GRID) {
 							MainPanel.toggleGrid ();
 						} else if (iFN == UtilsKeyboard.FN_TOGGLE_FLAT_MOUSE) {
@@ -1400,6 +1434,7 @@ public final class Game {
 
 			// Game logic
 			if (!getPanelMainMenu ().isActive ()) {
+				CommandPanel.updateGameMenuPause ();
 				world.nextTurn ();
 /*
 				// Comprobamos la victoria cada 4xFPS_INGAME turnos (para ganar un poquillo de performance)

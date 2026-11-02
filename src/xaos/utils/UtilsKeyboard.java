@@ -180,12 +180,71 @@ public final class UtilsKeyboard {
             return EMPTY_STRING;
         }
 
-        String sAux = Keyboard.getKeyName(shortcuts[iFN][0]);
+        String sAux = getKeyLabel(shortcuts[iFN][0]);
         if (shortcuts[iFN][1] != Keyboard.KEY_NONE) {
-            sAux += ", " + Keyboard.getKeyName(shortcuts[iFN][1]); //$NON-NLS-1$
+            // The main keyboard's key first: "= or keypad +"
+            String sSecond = getKeyLabel(shortcuts[iFN][1]);
+            if (sAux.startsWith("keypad ") && !sSecond.startsWith("keypad ")) { //$NON-NLS-1$ //$NON-NLS-2$
+                String sSwap = sAux;
+                sAux = sSecond;
+                sSecond = sSwap;
+            }
+            return " (" + Messages.getString("UtilsKeyboard.20") + sAux + " or " + sSecond + ")"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
         }
 
         return " (" + Messages.getString("UtilsKeyboard.15") + sAux + ")"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+    }
+
+    /**
+     * A key's name as it is printed on the keyboard, for tooltips: Towns
+     * showed LWJGL's names ("ADD, EQUALS").  The shortcuts file keeps
+     * LWJGL's names (saveShortcuts).
+     */
+    public static String getKeyLabel(int key) {
+        String name = Keyboard.getKeyName(key);
+        if (name == null) {
+            return EMPTY_STRING;
+        }
+        switch (name) {
+            case "ADD": return "keypad +"; //$NON-NLS-1$
+            case "SUBTRACT": return "keypad -"; //$NON-NLS-1$
+            case "MULTIPLY": return "keypad *"; //$NON-NLS-1$
+            case "DIVIDE": return "keypad /"; //$NON-NLS-1$
+            case "DECIMAL": return "keypad ."; //$NON-NLS-1$
+            case "NUMPADENTER": return "keypad Enter"; //$NON-NLS-1$
+            case "EQUALS": return "="; //$NON-NLS-1$
+            case "MINUS": return "-"; //$NON-NLS-1$
+            case "PERIOD": return "."; //$NON-NLS-1$
+            case "COMMA": return ","; //$NON-NLS-1$
+            case "SLASH": return "/"; //$NON-NLS-1$
+            case "BACKSLASH": return "\\"; //$NON-NLS-1$
+            case "SEMICOLON": return ";"; //$NON-NLS-1$
+            case "APOSTROPHE": return "'"; //$NON-NLS-1$
+            case "GRAVE": return "`"; //$NON-NLS-1$
+            case "LBRACKET": return "["; //$NON-NLS-1$
+            case "RBRACKET": return "]"; //$NON-NLS-1$
+            case "ESCAPE": return "Esc"; //$NON-NLS-1$
+            case "RETURN": return "Enter"; //$NON-NLS-1$
+            case "BACK": return "Backspace"; //$NON-NLS-1$
+            case "PRIOR": return "Page Up"; //$NON-NLS-1$
+            case "NEXT": return "Page Down"; //$NON-NLS-1$
+            case "LSHIFT": return "left Shift"; //$NON-NLS-1$
+            case "RSHIFT": return "right Shift"; //$NON-NLS-1$
+            case "LCONTROL": return "left Ctrl"; //$NON-NLS-1$
+            case "RCONTROL": return "right Ctrl"; //$NON-NLS-1$
+            case "LMENU": return "left Alt"; //$NON-NLS-1$
+            case "RMENU": return "right Alt"; //$NON-NLS-1$
+            default:
+                break;
+        }
+        if (name.startsWith("NUMPAD")) { //$NON-NLS-1$
+            return "keypad " + name.substring("NUMPAD".length()); //$NON-NLS-1$ //$NON-NLS-2$
+        }
+        if (name.length() > 1 && !name.matches("F[0-9]+")) { //$NON-NLS-1$
+            // SPACE, TAB, HOME, UP: as words
+            return name.charAt(0) + name.substring(1).toLowerCase();
+        }
+        return name;
     }
 
     public static int getKey(int fn, int iIndex) {

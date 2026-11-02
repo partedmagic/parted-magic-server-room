@@ -10,6 +10,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import xaos.datacenter.Crew;
+import xaos.datacenter.Leisure;
+import xaos.datacenter.Protests;
+import xaos.datacenter.Weather;
 import xaos.Towns;
 import xaos.TownsProperties;
 import xaos.actions.ActionManager;
@@ -70,6 +74,8 @@ import xaos.utils.UtilsAL;
 import xaos.utils.UtilsIniHeaders;
 import xaos.zones.Zone;
 import xaos.zones.ZoneHeroRoom;
+import xaos.zones.ZoneManager;
+import xaos.zones.ZoneManagerItem;
 import xaos.zones.ZonePersonal;
 
 
@@ -311,7 +317,20 @@ public abstract class LivingEntity extends Entity implements Externalizable {
 							World.getCell (x, y, z).freeLivingsMem ();
 						} else {
 							for (int i = 0; i < alLivings.size (); i++) {
-								alLivings.get (i).init (x, y, z);
+								LivingEntity le = alLivings.get (i);
+								// A save from before 2026-11-01 holds a guard post's guard
+								// as a plain friendly living, and his type is a crew type
+								// now: he is left out, and the post hires a crew guard
+								// (Protests.refresh)
+								LivingEntityManagerItem lemi = LivingEntityManager.getItem (le.getIniHeader ());
+								if (lemi != null && lemi.getType () == TYPE_CITIZEN && !(le instanceof Citizen)) {
+									alLivings.remove (i);
+									World.getLivings (true).remove (Integer.valueOf (le.getID ()));
+									World.getLivings (false).remove (Integer.valueOf (le.getID ()));
+									i--;
+									continue;
+								}
+								le.init (x, y, z);
 							}
 						}
 					}
@@ -382,8 +401,27 @@ public abstract class LivingEntity extends Entity implements Externalizable {
 
 
 	/**
+	 * Whether a technician stands in a SOCIAL zone (the break room), where
+	 * idle time counts as rest; from day 15 only a walled and roofed one,
+	 * and only for someone with something to do (Leisure)
+	 */
+	private static boolean isInSocialZone (Citizen cit) {
+		Cell cellHere = World.getCell (cit.getCoordinates ());
+		if (cellHere == null || !cellHere.hasZone ()) {
+			return false;
+		}
+		Zone zone = Zone.getZone (cellHere.getZoneID ());
+		if (zone == null) {
+			return false;
+		}
+		ZoneManagerItem zmi = ZoneManager.getItem (zone.getIniHeader ());
+		return zmi != null && zmi.getType () == ZoneManagerItem.TYPE_SOCIAL && Leisure.restsIn (cit, zone);
+	}
+
+
+	/**
 	 * Setea el número de livings para un living dado
-	 * 
+	 *
 	 * @param sIniHeader IniHeader del living
 	 * @param iNumber Cantidad
 	 */
@@ -1145,7 +1183,8 @@ public abstract class LivingEntity extends Entity implements Externalizable {
 		}
 
 		// Si la casilla de arriba está minada, miramos las casillas diagonal/parriba
-		if (currentZ > 0 && World.getCell (currentX, currentY, currentZ - 1).isMined ()) {
+		// (never up through a roof: Weather.isRoofAt)
+		if (currentZ > 0 && World.getCell (currentX, currentY, currentZ - 1).isMined () && !Weather.isRoofAt (currentX, currentY, currentZ - 1)) {
 			// Miramos las casillas posibles a las que puede ir
 			// Hay que mirar que no haya un hated ahí
 			for (int i = -1; i <= 1; i++) {
@@ -1183,7 +1222,8 @@ public abstract class LivingEntity extends Entity implements Externalizable {
 				nextcell: for (int j = -1; j <= 1; j++) {
 					if (i != 0 || j != 0) {
 						if (UtilsGeometry.isInsideMap (currentX + i, currentY + j, currentZ + 1)) {
-							if (isCellAllowed (currentX + i, currentY + j, currentZ + 1)) {
+							// Never down into a cell under a roof (Weather.isRoofAt)
+							if (isCellAllowed (currentX + i, currentY + j, currentZ + 1) && !Weather.isRoofAt (currentX + i, currentY + j, currentZ)) {
 								// Miramos el hate
 
 								// Por cada living en el destino miramos si la entity los odia
@@ -2507,6 +2547,7 @@ public abstract class LivingEntity extends Entity implements Externalizable {
 	}
 
 
+
 	public void delete (boolean dead) {
 		super.deleteLiving ();
 
@@ -2831,6 +2872,33 @@ public abstract class LivingEntity extends Entity implements Externalizable {
 				World.addNewLiving (lemi.getIniHeader (), lemi.getType (), World.getCell (getCoordinates ()).isDiscovered (), getX (), getY (), getZ (), true);
 			}
 		}
+	}
+
+
+	/**
+	 * A technician who quits (xaos.datacenter.Morale) leaves the site: what he
+	 * carries goes on the floor beside him, ready for a job, and no body is
+	 * left (delete (true) drops the corpse a dead one leaves)
+	 */
+	public void deleteLeaving () {
+		if (this instanceof Citizen) {
+			Citizen cit = (Citizen) this;
+			Item itemCarrying = cit.getCarrying ();
+			if (itemCarrying != null) {
+				cit.getCitizenData ().getCarryingData ().setCarrying (null);
+				ItemManagerItem imi = ItemManager.getItem (itemCarrying.getIniHeader ());
+				Point3DShort p3dDrop = searchDropCell (imi, getX (), getY (), getZ ());
+				if (p3dDrop != null) {
+					itemCarrying.init (p3dDrop.x, p3dDrop.y, p3dDrop.z);
+					itemCarrying.setOperative (true);
+					itemCarrying.setLocked (false);
+					World.getCell (p3dDrop).setEntity (itemCarrying);
+				} else if (imi.isContainer ()) {
+					Game.getWorld ().deleteContainer (itemCarrying.getID ());
+				}
+			}
+		}
+		delete (false);
 	}
 
 
@@ -3609,9 +3677,10 @@ public abstract class LivingEntity extends Entity implements Externalizable {
 			if (cit.updateEatSleep ()) {
 				return true;
 			}
-			// Happiness
+			// Happiness.  A guard standing his post has no task, which would
+			// count as idling all day; his work neither tires nor bores him
 			CitizenData cd = cit.getCitizenData ();
-			if (!cit.getSoldierData ().isSoldier ()) {
+			if (!cit.getSoldierData ().isSoldier () && !Crew.isGuard (cit)) {
 				if (Task.isWorkingTask (cit.getCurrentTask ())) {
 					// Working
 					if (cd.getHappinessWorkCounter () <= 0) {
@@ -3628,7 +3697,14 @@ public abstract class LivingEntity extends Entity implements Externalizable {
 					}
 				} else {
 					// Not working
-					if (cd.getHappinessIdleCounter () <= 0) {
+					if (isInSocialZone (cit)) {
+						// Resting in the break room (a SOCIAL zone) is rest, not
+						// idling: no boredom, and the idle counter keeps, so the
+						// furniture in sight still cheers them up (World.modifyHappiness
+						// skips a technician whose counter ran out).  A data center has
+						// little work for 11, and they all sat at 0 happiness, at half
+						// speed, break room or not
+					} else if (cd.getHappinessIdleCounter () <= 0) {
 						if (Game.getWorld ().getTurn () % (World.TIME_MODIFIER_HOUR / 2) == 0) {
 							// Sólo restamos happiness si realmente está idle, no cuando come o duerme
 							if (cit.getCurrentTask () == null || cit.getCurrentTask ().getTask () == Task.TASK_NO_TASK) {
@@ -3856,7 +3932,10 @@ public abstract class LivingEntity extends Entity implements Externalizable {
 							if (lemi.getType () == TYPE_FRIENDLY) {
 								// Friendly
 								// Miramos que no haya un wallConector (puerta), en ese caso lo paramos
-								if (imi != null && imi.isDoor () && !item.isDoorStatus (Item.FLAG_WALL_CONNECTOR_STATUS_UNLOCKED_AND_OPENED)) {
+								// The bear stops at any door, open or shut (Protests).  The
+								// protesters and the copper thieves walk through one like the
+								// crew: only guards stop people (Patrick, 2026-11-01)
+								if (imi != null && imi.isDoor () && !Protests.walksThroughDoors (getIniHeader ()) && (!item.isDoorStatus (Item.FLAG_WALL_CONNECTOR_STATUS_UNLOCKED_AND_OPENED) || Protests.isStoppedByDoors (getIniHeader ()))) {
 									bWallConector = true;
 
 									// Lo sacamos del path
@@ -4032,7 +4111,7 @@ public abstract class LivingEntity extends Entity implements Externalizable {
 
 				if (currentX >= 0 && currentY >= 0 && currentX < World.MAP_WIDTH && currentY < World.MAP_HEIGHT) {
 					Cell cell = World.getCell (currentX, currentY, currentZ);
-					if (isCellAllowed (cell)) {
+					if (isWanderAllowed (iType, currentX, currentY, currentZ)) {
 						if (counter > 0 && cell.hasBuilding () && !Building.getBuilding (cell.getBuildingCoordinates ()).isOperative () || cell.containsSpecificLiving (iType) != null) {
 						} else {
 							Point3DShort p3d = Point3DShort.getPoolInstance (currentX, currentY, currentZ);
@@ -4253,7 +4332,7 @@ public abstract class LivingEntity extends Entity implements Externalizable {
 						continue;
 					}
 
-					if (isCellAllowed (iAuxX, iAuxY, iAuxZ)) {
+					if (isWanderAllowed (iType, iAuxX, iAuxY, iAuxZ)) {
 						Cell cell = World.getCell (iAuxX, iAuxY, iAuxZ);
 						if (counter > 0 && cell.hasBuilding () && !Building.getBuilding (cell.getBuildingCoordinates ()).isOperative () || cell.containsSpecificLiving (iType) != null) {
 							moveAtRandom (iPCT, iType, (counter - 1));
@@ -4297,7 +4376,7 @@ public abstract class LivingEntity extends Entity implements Externalizable {
 								}
 
 								if (iAuxX >= 0 && iAuxX < World.MAP_WIDTH && iAuxY >= 0 && iAuxY < World.MAP_HEIGHT) {
-									if (isCellAllowed (iAuxX, iAuxY, iAuxZ)) {
+									if (isWanderAllowed (iType, iAuxX, iAuxY, iAuxZ)) {
 										Point3DShort p3d2 = Point3DShort.getPoolInstance (iAuxX, iAuxY, iAuxZ);
 										getPath ().add (p3d2);
 
@@ -4335,7 +4414,7 @@ public abstract class LivingEntity extends Entity implements Externalizable {
 												default:
 											}
 											if (iAuxX >= 0 && iAuxX < World.MAP_WIDTH && iAuxY >= 0 && iAuxY < World.MAP_HEIGHT) {
-												if (isCellAllowed (iAuxX, iAuxY, iAuxZ)) {
+												if (isWanderAllowed (iType, iAuxX, iAuxY, iAuxZ)) {
 													Point3DShort p3d3 = Point3DShort.getPoolInstance (iAuxX, iAuxY, iAuxZ);
 													getPath ().add (p3d3);
 												}
@@ -4351,6 +4430,36 @@ public abstract class LivingEntity extends Entity implements Externalizable {
 				}
 			}
 		}
+	}
+
+
+	/**
+	 * Whether a wandering living may step on this cell (moveAtRandom).  Wild
+	 * animals keep off the data center's own ground, so none stands on a cot
+	 * or at the erase station; one already on it may walk off.
+	 */
+	private boolean isWanderAllowed (int iType, int x, int y, int z) {
+		if (!isCellAllowed (x, y, z)) {
+			return false;
+		}
+		if (iType != TYPE_FRIENDLY) {
+			return true;
+		}
+		return !isBuiltGround (World.getCell (x, y, z)) || isBuiltGround (World.getCell (getX (), getY (), getZ ()));
+	}
+
+
+	/**
+	 * True on the data center's own ground: a zone, a stockpile, anything
+	 * placed (furniture, gear, a floor tile, dropped stock) or a floor built
+	 * over a hole
+	 */
+	private static boolean isBuiltGround (Cell cell) {
+		if (cell.hasZone () || cell.hasStockPile () || cell.getEntity () != null) {
+			return true;
+		}
+		Point3DShort p3d = cell.getCoordinates ();
+		return cell.isDigged () && p3d.z < (World.MAP_DEPTH - 1) && World.getCell (p3d.x, p3d.y, p3d.z + 1).getItem () != null;
 	}
 
 

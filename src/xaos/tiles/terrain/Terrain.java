@@ -477,26 +477,25 @@ public class Terrain implements Externalizable {
      * @param sm
      */
     public static void fillMenu(Cell cell, SmartMenu sm) {
-        // Menu add fluids
-        SmartMenu menuAddFluids = new SmartMenu(SmartMenu.TYPE_MENU, Messages.getString("Terrain.4"), sm, null, null); //$NON-NLS-1$
-        if (cell.getTerrain().getFluidCount() != 0) {
-            menuAddFluids.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("Terrain.5"), null, CommandPanel.COMMAND_TERRAIN_REMOVE_FLUID, null, null, cell.getCoordinates().toPoint3D())); //$NON-NLS-1$
-            menuAddFluids.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
-        }
-
-        menuAddFluids.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("Terrain.6"), null, CommandPanel.COMMAND_TERRAIN_ADD_FLUID, Integer.toString(FLUIDS_WATER), Integer.toString(FLUIDS_COUNT_MAX), cell.getCoordinates().toPoint3D())); //$NON-NLS-1$
+        // Menu add fluids: a debug tool only, a data center has no use for
+        // pouring water or lava (docs/content.md, C5)
         if (TownsProperties.DEBUG_MODE) {
+            SmartMenu menuAddFluids = new SmartMenu(SmartMenu.TYPE_MENU, Messages.getString("Terrain.4"), sm, null, null); //$NON-NLS-1$
+            if (cell.getTerrain().getFluidCount() != 0) {
+                menuAddFluids.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("Terrain.5"), null, CommandPanel.COMMAND_TERRAIN_REMOVE_FLUID, null, null, cell.getCoordinates().toPoint3D())); //$NON-NLS-1$
+                menuAddFluids.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
+            }
+
+            menuAddFluids.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("Terrain.6"), null, CommandPanel.COMMAND_TERRAIN_ADD_FLUID, Integer.toString(FLUIDS_WATER), Integer.toString(FLUIDS_COUNT_MAX), cell.getCoordinates().toPoint3D())); //$NON-NLS-1$
             menuAddFluids.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, "Water Inf", null, CommandPanel.COMMAND_TERRAIN_ADD_FLUID, Integer.toString(FLUIDS_WATER), Integer.toString(FLUIDS_COUNT_INFINITE), cell.getCoordinates().toPoint3D())); //$NON-NLS-1$
-        }
-        menuAddFluids.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("Terrain.7"), null, CommandPanel.COMMAND_TERRAIN_ADD_FLUID, Integer.toString(FLUIDS_LAVA), Integer.toString(FLUIDS_COUNT_MAX), cell.getCoordinates().toPoint3D())); //$NON-NLS-1$
-        if (TownsProperties.DEBUG_MODE) {
+            menuAddFluids.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("Terrain.7"), null, CommandPanel.COMMAND_TERRAIN_ADD_FLUID, Integer.toString(FLUIDS_LAVA), Integer.toString(FLUIDS_COUNT_MAX), cell.getCoordinates().toPoint3D())); //$NON-NLS-1$
             menuAddFluids.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, "Lava Inf", null, CommandPanel.COMMAND_TERRAIN_ADD_FLUID, Integer.toString(FLUIDS_LAVA), Integer.toString(FLUIDS_COUNT_INFINITE), cell.getCoordinates().toPoint3D())); //$NON-NLS-1$
-        }
-        menuAddFluids.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
-        menuAddFluids.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("Terrain.8"), sm, CommandPanel.COMMAND_BACK, null)); //$NON-NLS-1$
+            menuAddFluids.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
+            menuAddFluids.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("Terrain.8"), sm, CommandPanel.COMMAND_BACK, null)); //$NON-NLS-1$
 
-        sm.addItem(menuAddFluids);
-        sm.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
+            sm.addItem(menuAddFluids);
+            sm.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
+        }
 
         if (TownsProperties.DEBUG_MODE) {
             // Add item / livings
@@ -670,11 +669,12 @@ public class Terrain implements Externalizable {
                 // Si está minado buscamos acciones de la celda de abajo
                 Cell cellUnder = World.getCell(p3d.x, p3d.y, p3d.z + 1);
                 TerrainManagerItem tmiUnder = TerrainManager.getItemByID(cellUnder.getTerrain().getTerrainID());
-                if (tmiUnder.hasActions()) {
+                // Only on solid ground, as Task does; the job's own name ("Pour a concrete floor"), not Towns' "Till grass"
+                if (!cellUnder.isMined() && tmiUnder.hasActions()) {
                     ActionManagerItem ami;
                     for (int i = 0; i < tmiUnder.getActions().size(); i++) {
                         ami = ActionManager.getItem(tmiUnder.getActions().get(i));
-                        sm.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, ami.getName() + " " + tmiUnder.getName().toLowerCase(), null, CommandPanel.COMMAND_CUSTOM_ACTION, ami.getId(), null, cell.getCoordinates().toPoint3D())); //$NON-NLS-1$
+                        sm.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, ami.getName(), null, CommandPanel.COMMAND_CUSTOM_ACTION, ami.getId(), null, cell.getCoordinates().toPoint3D()));
                     }
                     sm.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
                 }
@@ -811,93 +811,62 @@ public class Terrain implements Externalizable {
             return;
         }
 
-        StringBuffer buffer;
         Cell cellCurrent = cells[x][y][z];
         if (!cellCurrent.isMined()) {
-            Cell cell;
-            // Miramos que gráfico usar
-            buffer = new StringBuffer("_"); //$NON-NLS-1$
-            if (y > 0) {
-                cell = cells[x][y - 1][z];
-                if (!cell.isDiscovered() || !cell.isMined()) {
-                    buffer.append('N');
-                }
-            } else {
+            // Miramos que gráfico usar: the solid neighbors on this level
+            boolean bN = isSolidForSlope(cells, x, y - 1, z);
+            boolean bS = isSolidForSlope(cells, x, y + 1, z);
+            boolean bE = isSolidForSlope(cells, x + 1, y, z);
+            boolean bW = isSolidForSlope(cells, x - 1, y, z);
+            StringBuffer buffer = new StringBuffer("_"); //$NON-NLS-1$
+            if (bN) {
                 buffer.append('N');
             }
-            if (y < (World.MAP_HEIGHT - 1)) {
-                cell = cells[x][y + 1][z];
-                if (!cell.isDiscovered() || !cell.isMined()) {
-                    buffer.append('S');
-                }
-            } else {
+            if (bS) {
                 buffer.append('S');
             }
-            if (x < (World.MAP_WIDTH - 1)) {
-                cell = cells[x + 1][y][z];
-                if (!cell.isDiscovered() || !cell.isMined()) {
-                    buffer.append('E');
-                }
-            } else {
+            if (bE) {
                 buffer.append('E');
             }
-            if (x > 0) {
-                cell = cells[x - 1][y][z];
-                if (!cell.isDiscovered() || !cell.isMined()) {
-                    buffer.append('W');
-                }
-            } else {
+            if (bW) {
                 buffer.append('W');
             }
 
-            if (buffer.length() == 5) {
-				// Interiors
-                // Miramos donde hay "huecos" en las diagonales
-                // Noroeste (N)
-                if (x > 0 && y > 0) {
-                    cell = cells[x - 1][y - 1][z];
-                    if (cell.isDiscovered() && cell.isMined()) {
-                        buffer.setCharAt(1, 'n');
-                    }
-                }
-                // Sureste (S)
-                if (x < (World.MAP_WIDTH - 1) && y < (World.MAP_HEIGHT - 1)) {
-                    cell = cells[x + 1][y + 1][z];
-                    if (cell.isDiscovered() && cell.isMined()) {
-                        buffer.setCharAt(2, 's');
-                    }
-                }
-                // Noreste (E)
-                if (x < (World.MAP_WIDTH - 1) && y > 0) {
-                    cell = cells[x + 1][y - 1][z];
-                    if (cell.isDiscovered() && cell.isMined()) {
-                        buffer.setCharAt(3, 'e');
-                    }
-                }
-                // Suroeste (W)
-                if (x > 0 && y < (World.MAP_HEIGHT - 1)) {
-                    cell = cells[x - 1][y + 1][z];
-                    if (cell.isDiscovered() && cell.isMined()) {
-                        buffer.setCharAt(4, 'w');
-                    }
-                }
+            // A corner between two solid sides lies low when the cell across
+            // it is open, as it does for every other cell around that corner
+            // (an open side lowers both its corners), so neighbors agree on
+            // it (TerrainManager.SLOPES_INIHEADER)
+            StringBuffer corners = new StringBuffer();
+            if (bN && bW && !isSolidForSlope(cells, x - 1, y - 1, z)) {
+                corners.append("nw"); //$NON-NLS-1$
+            }
+            if (bN && bE && !isSolidForSlope(cells, x + 1, y - 1, z)) {
+                corners.append("ne"); //$NON-NLS-1$
+            }
+            if (bS && bE && !isSolidForSlope(cells, x + 1, y + 1, z)) {
+                corners.append("se"); //$NON-NLS-1$
+            }
+            if (bS && bW && !isSolidForSlope(cells, x - 1, y + 1, z)) {
+                corners.append("sw"); //$NON-NLS-1$
+            }
+            if (corners.length() > 0) {
+                buffer.append('_').append(corners);
             }
 
-            if (buffer != null) {
-                int iIndex = 0;
-                String sIniHeader = buffer.toString();
-                for (int i = 1; i < TerrainManager.SLOPES_INIHEADER.length; i++) {
-                    if (sIniHeader.equals(TerrainManager.SLOPES_INIHEADER[i])) {
-                        iIndex = i;
-                        break;
-                    }
-                }
-                if (iIndex != 0) {
-                    cellCurrent.getTerrain().setTerrainTileID(cellCurrent.getTerrain().getTerrainID() * TerrainManager.SLOPES_INIHEADER.length + iIndex);
-                    //terrain.setTerrainTileID (terrain.getTerrainTileID () + iIndex);
-                }
-            }
+            cellCurrent.getTerrain().setTerrainTileID(cellCurrent.getTerrain().getTerrainID() * TerrainManager.SLOPES_INIHEADER.length + TerrainManager.getSlopeIndex(buffer.toString()));
         }
+    }
+
+    /**
+     * True when the cell counts as solid ground for the slopes: not dug out,
+     * not yet discovered, or off the map
+     */
+    private static boolean isSolidForSlope(Cell[][][] cells, int x, int y, int z) {
+        if (x < 0 || y < 0 || x >= World.MAP_WIDTH || y >= World.MAP_HEIGHT) {
+            return true;
+        }
+        Cell cell = cells[x][y][z];
+        return !cell.isDiscovered() || !cell.isMined();
     }
 
     /**

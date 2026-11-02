@@ -25,6 +25,7 @@ import xaos.compat.input.Mouse;
 import xaos.compat.opengl.Display;
 import xaos.compat.opengl.DisplayMode;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL13;
 
 import xaos.Towns;
@@ -109,10 +110,9 @@ public final class UtilsGL {
 			Display.setResizable (true);
 			Display.setFullscreen (bFullScreen);
 			Display.setVSyncEnabled (true);
-			Display.setTitle ("Towns");
+			Display.setTitle (TownsProperties.GAME_NAME);
 
-			ImageData iconImage = loadImage ("icon.png");
-			Display.setIcon (new ByteBuffer [] { iconImage.getImagePixels () });
+			Display.setIcon (loadWindowIcons ());
 			Display.create ();
 
 			if (TownsProperties.DEBUG_MODE) {
@@ -127,6 +127,40 @@ public final class UtilsGL {
 		}
 
 		initGLModes ();
+	}
+
+
+	/**
+	 * The window's icons: the launcher's logo-16, logo-32 and logo-48
+	 * pictures, found as the launcher finds them (icons/ in the packaged app,
+	 * or packaging/icons/source when running from source), else
+	 * data/graphics/icon.png.  Given only the 64 pixel icon.png, Windows 11
+	 * showed its generic icon on the game's taskbar button (2026-11-01),
+	 * although the window reported the rack.
+	 *
+	 * @return square RGBA pictures, for Display.setIcon
+	 */
+	private static ByteBuffer[] loadWindowIcons () {
+		ArrayList<ByteBuffer> alIcons = new ArrayList<ByteBuffer> ();
+		for (int size : new int[] { 16, 32, 48 }) {
+			File fIcon = new File (Towns.resolveHome ("icons" + File.separator + "logo-" + size + ".png")); //$NON-NLS-1$ //$NON-NLS-2$
+			if (!fIcon.isFile ()) {
+				fIcon = new File (".." + File.separator + "packaging" + File.separator + "icons" + File.separator + "source", "logo-" + size + ".png"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
+			}
+			if (!fIcon.isFile ()) {
+				continue;
+			}
+			try {
+				alIcons.add (loadImageData (fIcon.getPath (), fIcon.getName ()).getImagePixels ());
+			}
+			catch (IOException e) {
+				Log.log (Log.LEVEL_DEBUG, "Window icon [" + fIcon + "] failed: " + e, "UtilsGL"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			}
+		}
+		if (alIcons.isEmpty ()) {
+			alIcons.add (loadImage ("icon.png").getImagePixels ()); //$NON-NLS-1$
+		}
+		return alIcons.toArray (new ByteBuffer [alIcons.size ()]);
 	}
 
 
@@ -797,6 +831,87 @@ public final class UtilsGL {
 	 */
 	public static TextureData loadTexture (String imageFile, int textureMode) {
 		return loadTexture (imageFile, textureMode, false);
+	}
+
+
+	/**
+	 * Loads a picture drawn over the whole screen (the splash) with smooth
+	 * scaling: linear filtering and a full set of mipmaps made here, so one
+	 * large picture shrinks cleanly into a small window and is drawn pixel
+	 * for pixel on a large screen.  The sprites keep GL_NEAREST: at 3.75
+	 * times a 512 pixel splash looked soft and blocky in full screen.  Not
+	 * cached: its pixels (33 MB for 3840x2160) are let go once the texture
+	 * is on the card.
+	 *
+	 * @param imageFile
+	 * @param textureMode
+	 * @return the texture, null if the picture cannot be read
+	 */
+	public static TextureData loadTextureSmooth (String imageFile, int textureMode) {
+		if (imageFile == null) {
+			return null;
+		}
+
+		if (Game.isHeadless ()) {
+			return headlessTexture (imageFile);
+		}
+
+		ImageData image = loadImage (imageFile, true);
+		cachedImages.remove (imageFile);
+		if (image == null) {
+			return null;
+		}
+
+		TextureData texture = new TextureData (image, getFreeTextureID ());
+		GL11.glBindTexture (GL11.GL_TEXTURE_2D, texture.getTextureID ());
+		GL11.glPixelStorei (GL11.GL_UNPACK_ALIGNMENT, 1);
+		GL11.glTexParameteri (GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
+		GL11.glTexParameteri (GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
+		GL11.glTexParameteri (GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+		GL11.glTexParameteri (GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR_MIPMAP_LINEAR);
+		GL11.glTexEnvi (GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_MODE, textureMode);
+
+		// Each level is half the one before, rounded down, to 1x1, as GL
+		// wants for a picture whose sides are not powers of two
+		int width = image.getWidth ();
+		int height = image.getHeight ();
+		ByteBuffer pixels = image.getImagePixels ();
+		for (int level = 0; ; level++) {
+			GL11.glTexImage2D (GL11.GL_TEXTURE_2D, level, GL11.GL_RGBA, width, height, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
+			if (width == 1 && height == 1) {
+				break;
+			}
+			int halfWidth = Math.max (1, width / 2);
+			int halfHeight = Math.max (1, height / 2);
+			pixels = halvePixels (pixels, width, height, halfWidth, halfHeight);
+			width = halfWidth;
+			height = halfHeight;
+		}
+
+		return texture;
+	}
+
+
+	/**
+	 * @return the RGBA pixels at half size, each the mean of the 2x2 block
+	 *         under it (one column or row when a side is already 1)
+	 */
+	private static ByteBuffer halvePixels (ByteBuffer pixels, int width, int height, int halfWidth, int halfHeight) {
+		ByteBuffer half = ByteBuffer.allocateDirect (4 * halfWidth * halfHeight);
+		for (int y = 0; y < halfHeight; y++) {
+			int y0 = Math.min (2 * y, height - 1);
+			int y1 = Math.min (2 * y + 1, height - 1);
+			for (int x = 0; x < halfWidth; x++) {
+				int x0 = Math.min (2 * x, width - 1);
+				int x1 = Math.min (2 * x + 1, width - 1);
+				for (int c = 0; c < 4; c++) {
+					int sum = (pixels.get (4 * (y0 * width + x0) + c) & 0xFF) + (pixels.get (4 * (y0 * width + x1) + c) & 0xFF) + (pixels.get (4 * (y1 * width + x0) + c) & 0xFF) + (pixels.get (4 * (y1 * width + x1) + c) & 0xFF);
+					half.put ((byte) ((sum + 2) / 4));
+				}
+			}
+		}
+		half.flip ();
+		return half;
 	}
 
 

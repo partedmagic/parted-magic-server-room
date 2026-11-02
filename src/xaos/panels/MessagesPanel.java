@@ -333,7 +333,8 @@ public final class MessagesPanel {
             pagesCurrent[i] = 1;
         }
 
-        String sVersion = TownsProperties.GAME_NAME + " " + TownsProperties.GAME_VERSION_FULL; //$NON-NLS-1$
+        // The name only, no version (the play-through of 2026-10-30)
+        String sVersion = TownsProperties.GAME_NAME;
         if (TownsProperties.DEMO_VERSION) {
             sVersion += " (demo)"; //$NON-NLS-1$
         }

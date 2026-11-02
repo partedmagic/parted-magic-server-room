@@ -1,85 +1,44 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 
 <zones>
-	<zbakery>
-		<name esES="Panadería">Bakery</name>
-		<type>WORKSHOP</type>
-	</zbakery>
-
-	<zcarpentry>
-		<name esES="Carpintería">Carpentry</name>
-		<type>WORKSHOP</type>
-	</zcarpentry>
 
 	<zdining>
-		<name esES="Comedor">Dining room</name>
-		<type>DINING</type>
+		<name>Break room</name>
+		<!-- SOCIAL: idle technicians rest here (Citizen idles toward SOCIAL
+		     zones); eating finds it by its ID, as livingentities' eatZone -->
+		<type>SOCIAL</type>
 	</zdining>
 
-	<zforge>
-		<name esES="Forja">Forge</name>
-		<type>WORKSHOP</type>
-	</zforge>
+	<!-- The donut shop (the tavern until 2026-11-01; the ID stays for saves).
+	     Guards come only to a site that has one with a donut case (dcbar);
+	     a second SOCIAL zone (Leisure): with walls and a roof too it gives
+	     every construction worker something to do from day 15 -->
+	<ztavern>
+		<name>Donut shop</name>
+		<type>SOCIAL</type>
+		<minWidth>3</minWidth>
+		<minHeight>3</minHeight>
+	</ztavern>
 
 	<zhospital>
-		<name>Hospital</name>
+		<name>First aid room</name>
 		<type>HOSPITAL</type>
 	</zhospital>
 
-	<zkitchen>
-		<name esES="Cocina">Kitchen</name>
-		<type>WORKSHOP</type>
-	</zkitchen>
-
-	<zmasonry>
-		<name esES="Albañilería">Masonry</name>
-		<type>WORKSHOP</type>
-	</zmasonry>
-
 	<zpersonal>
-		<name esES="Habitación personal">Personal room</name>
+		<name>Bunk room</name>
 		<type>PERSONAL</type>
+		<!-- One technician each, so 2 by 2 (a cot and room to stand), not
+		     Towns' 3 by 3: a crew of eleven needs eleven -->
+		<minWidth>2</minWidth>
+		<minHeight>2</minHeight>
 	</zpersonal>
 
-	<zarena>
-		<name esES="Arena">Arena</name>
-		<type>WORKSHOP</type>
-	</zarena>
-
-	<zatelier>
-		<name esES="Taller">Atelier</name>
-		<type>WORKSHOP</type>
-	</zatelier>
-
-	<zbalcony>
-		<name esES="Balcón">Balcony</name>
-		<minWidth>1</minWidth>
-		<minHeight>1</minHeight>
-		<neighbor>zarena</neighbor>
-		<type>SOCIAL</type>
-	</zbalcony>
-
-	<ztavern>
-		<name esES="Taberna">Tavern</name>
-		<type>DINING</type>
-		<minWidth>5</minWidth>
-		<minHeight>5</minHeight>
-	</ztavern>
-
-	<ztavernroom>
-		<name esES="Habitación de taberna">Tavern room</name>
-		<type>HEROROOM</type>
-	</ztavernroom>
-
 	<zmarket>
-		<name esES="Mercado">Market</name>
-		<type>SOCIAL</type>
+		<name>Loading dock</name>
+		<!-- WORKSHOP has no behavior; as SOCIAL it drew every idle
+		     technician to stand on the dock.  Trucks find it by its ID -->
+		<type>WORKSHOP</type>
 	</zmarket>
 
-	<zbarracks>
-		<name esES="Cuartel">Barracks</name>
-		<type>BARRACKS</type>
-		<minWidth>5</minWidth>
-		<minHeight>5</minHeight>
-	</zbarracks>
 </zones>

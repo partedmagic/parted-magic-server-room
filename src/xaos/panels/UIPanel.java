@@ -11,6 +11,8 @@ import org.lwjgl.opengl.GL11;
 import xaos.TownsProperties;
 import xaos.actions.ActionManager;
 import xaos.actions.ActionManagerItem;
+import xaos.datacenter.Crew;
+import xaos.datacenter.DataCenter;
 import xaos.actions.ActionPriorityManager;
 import xaos.campaign.TutorialFlow;
 import xaos.campaign.TutorialTrigger;
@@ -388,6 +390,10 @@ public final class UIPanel {
 	// private static Tile tileIconGods;
 	private static Point iconTutorialPoint = new Point (0, 0);
 	public static Tile tileIconTutorial;
+
+	// Where the soldier and hero controls go when there is no fighting: off
+	// the screen, so nothing draws or clicks them
+	public static final Point OFF_SCREEN = new Point (-10000, -10000);
 
 	// INFO
 	private static Tile tileIconNumCitizens;
@@ -959,6 +965,21 @@ public final class UIPanel {
 
 		// Caravan
 		iconCaravanBackgroundPoint.setLocation (datePanelPoint.x + tileDatePanel.getTileWidth () + 2 * iSeparation + tileBottomItem.getTileWidth (), infoPanelPoint.y + tileIconCaravan.getTileHeightOffset ());
+
+		if (!TownsProperties.FIGHTING) {
+			// No soldiers or heroes: the technicians sit alone left of the
+			// date and the truck alone right of it
+			int iLeft = (datePanelPoint.x - infoPanelPoint.x - tileBottomItem.getTileWidth ()) / 2;
+			iconNumCitizensBackgroundPoint.setLocation (infoPanelPoint.x + iLeft, iconNumCitizensBackgroundPoint.y);
+			iconNumCitizensPoint.setLocation (iconNumCitizensBackgroundPoint.x + tileIconNumCitizens.getTileWidthOffset (), iconNumCitizensPoint.y);
+			iconCitizenPreviousPoint.setLocation (iconNumCitizensBackgroundPoint.x + tileIconCitizenPrevious.getTileWidthOffset (), iconCitizenPreviousPoint.y);
+			iconCitizenNextPoint.setLocation (iconNumCitizensBackgroundPoint.x + tileIconCitizenNext.getTileWidthOffset (), iconCitizenNextPoint.y);
+			int iRight = (infoPanelPoint.x + tileInfoPanel.getTileWidth () - (datePanelPoint.x + tileDatePanel.getTileWidth ()) - tileBottomItem.getTileWidth ()) / 2;
+			iconCaravanBackgroundPoint.setLocation (datePanelPoint.x + tileDatePanel.getTileWidth () + iRight, iconCaravanBackgroundPoint.y);
+			for (Point p : new Point [] {iconNumSoldiersBackgroundPoint, iconNumSoldiersPoint, iconSoldierPreviousPoint, iconSoldierNextPoint, iconNumHeroesBackgroundPoint, iconNumHeroesPoint, iconHeroPreviousPoint, iconHeroNextPoint}) {
+				p.setLocation (OFF_SCREEN);
+			}
+		}
 		iconCaravanPoint.setLocation (iconCaravanBackgroundPoint.x + tileIconCaravan.getTileWidthOffset (), iconCaravanBackgroundPoint.y + tileBottomItem.getTileHeight () / 2 - tileIconCaravan.getTileHeight () / 2);
 
 		if (bLoadMenus) {
@@ -1077,6 +1098,13 @@ public final class UIPanel {
 		}
 
 		int mousePanel = isMouseOnAPanel (mouseX, mouseY, true);
+
+		// The tutorial panel goes under the rest of the interface (and
+		// isMouseOnAPanel tests it last), so the status line, the menus and
+		// any panel the player opens stay in view and take the clicks
+		if (imagesPanel != null && ImagesPanel.isVisible ()) {
+			ImagesPanel.render (mousePanel);
+		}
 
 		/*
 		 * BOTTOM menu panel
@@ -1408,12 +1436,25 @@ public final class UIPanel {
 		GL11.glBindTexture (GL11.GL_TEXTURE_2D, Game.TEXTURE_FONT_ID);
 		GL11.glTexEnvf (GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_MODE, GL11.GL_MODULATE);
 		UtilsGL.glBegin (GL11.GL_QUADS);
-		UtilsGL.drawString (sLevel, iconLevelPoint.x + tileIconLevel.getTileWidth () / 2 - sLevelW / 2, iconLevelPoint.y + tileIconLevel.getTileHeight () / 2 - UtilFont.MAX_HEIGHT / 2, ColorGL.BLACK);
-		UtilsGL.drawString (sNumCitizens, iconNumCitizensPoint.x + tileIconNumCitizens.getTileWidth () / 2 - numCitizensW / 2, iconNumCitizensPoint.y + tileIconNumCitizens.getTileHeight (), ColorGL.BLACK);
-		UtilsGL.drawString (sNumSoldiers, iconNumSoldiersPoint.x + tileIconNumSoldiers.getTileWidth () / 2 - numSoldiersW / 2, iconNumSoldiersPoint.y + tileIconNumSoldiers.getTileHeight (), ColorGL.BLACK);
-		UtilsGL.drawString (sNumHeroes, iconNumHeroesPoint.x + tileIconNumHeroes.getTileWidth () / 2 - numHeroesW / 2, iconNumHeroesPoint.y + tileIconNumHeroes.getTileHeight (), ColorGL.BLACK);
-		UtilsGL.drawString (sDate, datePanelPoint.x + tileDatePanel.getTileWidth () / 2 - dateW / 2, datePanelPoint.y + tileDatePanel.getTileHeight () / 2 - UtilFont.MAX_HEIGHT / 2, ColorGL.BLACK);
+		UtilsGL.drawString (sLevel, iconLevelPoint.x + tileIconLevel.getTileWidth () / 2 - sLevelW / 2, iconLevelPoint.y + tileIconLevel.getTileHeight () / 2 - UtilFont.MAX_HEIGHT / 2, ColorGL.WHITE);
+		// White with a border: the art pass made the panels dark
+		UtilsGL.drawStringWithBorder (sNumCitizens, iconNumCitizensPoint.x + tileIconNumCitizens.getTileWidth () / 2 - numCitizensW / 2, iconNumCitizensPoint.y + tileIconNumCitizens.getTileHeight (), ColorGL.WHITE, ColorGL.BLACK);
+		UtilsGL.drawString (sNumSoldiers, iconNumSoldiersPoint.x + tileIconNumSoldiers.getTileWidth () / 2 - numSoldiersW / 2, iconNumSoldiersPoint.y + tileIconNumSoldiers.getTileHeight (), ColorGL.WHITE);
+		UtilsGL.drawString (sNumHeroes, iconNumHeroesPoint.x + tileIconNumHeroes.getTileWidth () / 2 - numHeroesW / 2, iconNumHeroesPoint.y + tileIconNumHeroes.getTileHeight (), ColorGL.WHITE);
+		UtilsGL.drawStringWithBorder (sDate, datePanelPoint.x + tileDatePanel.getTileWidth () / 2 - dateW / 2, datePanelPoint.y + tileDatePanel.getTileHeight () / 2 - UtilFont.MAX_HEIGHT / 2, ColorGL.WHITE, ColorGL.BLACK);
 		UtilsGL.drawString (sTownCoins, tileIconCoinsPoint.x - iTownsCoinsWidth / 2 + tileIconCoins.getTileWidth () / 2, tileIconCoinsPoint.y + tileIconCoins.getTileHeight () / 2 - UtilFont.MAX_HEIGHT / 2, ColorGL.WHITE);
+
+		// Data center status, under the date and the two buttons below it: the
+		// hall, the customers and money, and in orange what needs doing
+		String sDataCenter = DataCenter.getStatusLine ();
+		if (sDataCenter != null) {
+			int iStatusY = drawStatusLine (sDataCenter, iconMatsPoint.y + tileIconMats.getTileHeight () + 4, ColorGL.WHITE);
+			iStatusY = drawStatusLine (DataCenter.getStatusBusiness (), iStatusY, ColorGL.WHITE);
+			String sProblems = DataCenter.getStatusProblems ();
+			if (sProblems != null) {
+				drawStatusLine (sProblems, iStatusY, ColorGL.ORANGE);
+			}
+		}
 
 		if (TownsProperties.DEBUG_MODE) {
 			// Global events
@@ -1487,11 +1528,6 @@ public final class UIPanel {
 		// Al final de todo el Typing panel si hace falta
 		if (typingPanel != null) {
 			TypingPanel.render (mousePanel);
-		}
-
-		// Al final de todo el Images panel si hace falta
-		if (imagesPanel != null && ImagesPanel.isVisible ()) {
-			ImagesPanel.render (mousePanel);
 		}
 
 		// Tooltip
@@ -1703,6 +1739,21 @@ public final class UIPanel {
 									break;
 							}
 						}
+						if (tooltip != null && item.getPrerequisites () != null && item.getPrerequisites ().size () > 0) {
+							// A button with a description in menu.xml (Repair): the
+							// name and key, then the description, as a group's row
+							// shows its buttons
+							ArrayList<String> alLines = new ArrayList<String> (item.getPrerequisites ());
+							ArrayList<ColorGL> alColors = new ArrayList<ColorGL> (item.getPrerequisitesColor ());
+							if (alLines.get (0).equals (item.getName ())) {
+								alLines.set (0, tooltip);
+							} else {
+								alLines.add (0, tooltip);
+								alColors.add (0, new ColorGL (null));
+							}
+							MainPanel.renderMessages (x, BottomMenuUIPanel.bottomPanelY - (alLines.size () * (UtilFont.MAX_HEIGHT + 5)), renderWidth, renderHeight, Tile.TERRAIN_ICON_WIDTH / 2, alLines, alColors);
+							tooltip = null;
+						}
 						if (tooltip != null) {
 							tooltipX = x - (UtilFont.getWidth (tooltip)) / 2;
 							tooltipY = BottomMenuUIPanel.bottomPanelY - (2 * UtilFont.MAX_HEIGHT);
@@ -1851,7 +1902,9 @@ public final class UIPanel {
 					tooltipX = x + 32;
 					tooltipY = y;
 				} else if (!bTrading && mousePanel == MOUSE_TRADE_PANEL_BUTTONS_CONFIRM) {
-					tooltip = Messages.getString ("UIPanel.36"); //$NON-NLS-1$
+					// With nothing picked, Confirm sends the truck away (TradePanel.setCost)
+					boolean bNothingPicked = caravanData != null && caravanData.getMenuCaravanToBuy ().getItems ().size () == 0 && caravanData.getMenuTownToSell ().getItems ().size () == 0;
+					tooltip = Messages.getString (bNothingPicked ? "UIPanel.36away" : "UIPanel.36"); //$NON-NLS-1$ //$NON-NLS-2$
 					tooltipX = x + 32;
 					tooltipY = y;
 				}
@@ -2084,10 +2137,13 @@ public final class UIPanel {
 									ArrayList<String> alMessages = new ArrayList<String> (6 + iNumEffects);
 									ArrayList<ColorGL> alColors = new ArrayList<ColorGL> (6 + iNumEffects);
 
-									alMessages.add (citizen.getCitizenData ().getFullName ());
+									alMessages.add (citizen.getCitizenData ().getFullName () + ", " + Crew.getRoleName (citizen)); //$NON-NLS-1$
 									alColors.add (ColorGL.YELLOW);
-									alMessages.add (citizen.getLivingEntityData ().toString ());
-									alColors.add (ColorGL.WHITE);
+									// HP, attack, defense and damage mean nothing without fighting
+									if (TownsProperties.FIGHTING) {
+										alMessages.add (citizen.getLivingEntityData ().toString ());
+										alColors.add (ColorGL.WHITE);
+									}
 									if (citizen.getCurrentTask () != null) {
 										alMessages.add (Messages.getString ("Citizen.7") + citizen.getCurrentTask ()); //$NON-NLS-1$
 										alColors.add (ColorGL.WHITE);
@@ -2291,7 +2347,8 @@ public final class UIPanel {
 					} else if (happinessMin > 80) {
 						happinessMin = 80;
 					}
-					tooltip = Messages.getString ("UIPanel.8") + " (" + Messages.getString ("UIPanel.76") + ": " + World.getHappinessAverage () + " " + Messages.getString ("UIPanel.81") + ": " + happinessMin + ")"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
+					int[] aCrew = Crew.getCounts ();
+					tooltip = java.text.MessageFormat.format (Messages.getString ("UIPanel.8"), aCrew[0], aCrew[1], aCrew[2]) + " (" + Messages.getString ("UIPanel.76") + ": " + World.getHappinessAverage () + " " + Messages.getString ("UIPanel.81") + ": " + happinessMin + ")"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
 					tooltipX = iconNumCitizensBackgroundPoint.x + tileBottomItem.getTileWidth () / 2 - (UtilFont.getWidth (tooltip) / 2);
 					tooltipY = iconNumCitizensBackgroundPoint.y + tileBottomItem.getTileHeight ();
 				} else if (mousePanel == MOUSE_INFO_NUM_SOLDIERS) {
@@ -2791,31 +2848,8 @@ public final class UIPanel {
 			return MOUSE_NONE;
 		}
 
-		/*
-		 * IMAGES PANEL
-		 */
-		if (imagesPanel != null && ImagesPanel.isVisible ()) {
-			if (isMouseOnImagesPanel (x, y)) {
-				if (isMouseOnAnIcon (x, y, ImagesPanel.getCloseButtonPoint (), tileButtonClose, tileButtonCloseAlpha)) {
-					return MOUSE_IMAGES_PANEL_CLOSE;
-				} else if (isMouseOnAnIcon (x, y, ImagesPanel.getPreviousImagePoint (), ImagesPanel.getTilePrevious ())) {
-					return MOUSE_IMAGES_PANEL_PREVIOUS;
-				} else if (isMouseOnAnIcon (x, y, ImagesPanel.getNextImagePoint (), ImagesPanel.getTileNext ())) {
-					return MOUSE_IMAGES_PANEL_NEXT;
-				} else if (isMouseOnAnIcon (x, y, ImagesPanel.getNextMissionPoint (), ImagesPanel.getTileNextMission ())) {
-					return MOUSE_IMAGES_PANEL_NEXT_MISSION;
-				}
-
-				return MOUSE_IMAGES_PANEL;
-			}
-
-			// Miramos también el botón (para hacer toggle)
-//			if (isMouseOnAnIcon (x, y, iconTutorialPoint, tileBottomItem, tileBottomItemAlpha)) {
-//				return MOUSE_TUTORIAL_ICON;
-//			}
-//
-//			return MOUSE_NONE;
-		}
+		// The tutorial (images) panel is tested last: render draws it under
+		// everything else
 
 		/*
 		 * PROFESSIONS PANEL
@@ -3120,6 +3154,18 @@ public final class UIPanel {
 				if (isMouseOnAnIcon (x, y, RightMenuUIPanel.tileOpenCloseRightMenuPoint, RightMenuUIPanel.tileOpenRightMenu, tileOpenRightMenuAlpha)) {
 					RightMenuUIPanel.setMenuPanelActive (true);
 
+					// It opens at its groups, not the group last used, so the
+					// group the tutorial blinks is in view
+					SmartMenu smRoot = RightMenuUIPanel.menuPanelMenu;
+					while (smRoot != null && smRoot.getParent () != null) {
+						smRoot = smRoot.getParent ();
+					}
+					if (smRoot != null && smRoot != RightMenuUIPanel.menuPanelMenu) {
+						RightMenuUIPanel.menuPanelMenu = smRoot;
+						createMenuPanel (smRoot);
+						ProductionUIPanel.createProductionPanel (ProductionUIPanel.productionPanelMenu);
+					}
+
 					// Cerramos los menús no locked
 					closeNonLockedMenus (true, false, true);
 					delayTime = 0;
@@ -3252,6 +3298,25 @@ public final class UIPanel {
 		// MINIMAP
 		if (isMouseOnMinimap (x, y)) {
 			return MOUSE_MINIMAP;
+		}
+
+		/*
+		 * IMAGES PANEL (the tutorial), under everything above
+		 */
+		if (imagesPanel != null && ImagesPanel.isVisible ()) {
+			if (isMouseOnImagesPanel (x, y)) {
+				if (isMouseOnAnIcon (x, y, ImagesPanel.getCloseButtonPoint (), tileButtonClose, tileButtonCloseAlpha)) {
+					return MOUSE_IMAGES_PANEL_CLOSE;
+				} else if (isMouseOnAnIcon (x, y, ImagesPanel.getPreviousImagePoint (), ImagesPanel.getTilePrevious ())) {
+					return MOUSE_IMAGES_PANEL_PREVIOUS;
+				} else if (isMouseOnAnIcon (x, y, ImagesPanel.getNextImagePoint (), ImagesPanel.getTileNext ())) {
+					return MOUSE_IMAGES_PANEL_NEXT;
+				} else if (isMouseOnAnIcon (x, y, ImagesPanel.getNextMissionPoint (), ImagesPanel.getTileNextMission ())) {
+					return MOUSE_IMAGES_PANEL_NEXT_MISSION;
+				}
+
+				return MOUSE_IMAGES_PANEL;
+			}
 		}
 
 		return MOUSE_NONE;
@@ -4991,6 +5056,57 @@ public final class UIPanel {
 		}
 
 		return 0;
+	}
+
+	/**
+	 * Draws a data center status line centered under the date.  The lines
+	 * grow with the site, so one that would run under the minimap moves left,
+	 * and one wider than the room left of the minimap breaks at its gaps
+	 * (three spaces) into more rows.  A 1024 wide window has 616 pixels
+	 * around the center; a 40 rack site's longest line takes about 530.
+	 *
+	 * @return the y of the row under it
+	 */
+	private int drawStatusLine (String sLine, int iY, ColorGL color) {
+		int iRight = minimapPanelX - PIXELS_TO_BORDER;
+		int iRoom = iRight - PIXELS_TO_BORDER;
+		String[] asParts = sLine.split ("   "); //$NON-NLS-1$
+		String sRow = asParts[0];
+		for (int i = 1; i < asParts.length; i++) {
+			String sLonger = sRow + "   " + asParts[i]; //$NON-NLS-1$
+			if (UtilFont.getWidth (sLonger) > iRoom) {
+				drawStatusRow (sRow, iY, iRight, color);
+				iY += UtilFont.MAX_HEIGHT;
+				sRow = asParts[i];
+			} else {
+				sRow = sLonger;
+			}
+		}
+		drawStatusRow (sRow, iY, iRight, color);
+		return iY + UtilFont.MAX_HEIGHT;
+	}
+
+	private void drawStatusRow (String sRow, int iY, int iRight, ColorGL color) {
+		int iWidth = UtilFont.getWidth (sRow);
+		int iX = Math.min (renderWidth / 2 - iWidth / 2, iRight - iWidth);
+		UtilsGL.drawStringWithBorder (sRow, Math.max (PIXELS_TO_BORDER, iX), iY, color, ColorGL.BLACK);
+	}
+
+	/**
+	 * The first row under the data center status lines (the hall, the
+	 * customers and money, and what needs doing), which render draws at
+	 * iconMatsPoint.y + icon height + 4.  Worked out from the date panel,
+	 * because resize places the tutorial panel before iconMatsPoint.  Three
+	 * rows: a tutorial site stays small enough that no line breaks
+	 * (drawStatusLine).
+	 */
+	public static int getStatusLineBottom () {
+		if (tileDatePanel == null || tileIconMats == null) {
+			// Headless runs load no interface tiles, and a tutorial mission
+			// still builds its panel (Game.setupGame)
+			return datePanelPoint.y;
+		}
+		return datePanelPoint.y + tileDatePanel.getTileHeight () + tileIconMats.getTileHeightOffset () + tileIconMats.getTileHeight () + 4 + 3 * UtilFont.MAX_HEIGHT;
 	}
 
 	public static void toggleTutorialPanel (boolean bNewGame) {

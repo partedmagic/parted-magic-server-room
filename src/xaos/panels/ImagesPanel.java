@@ -116,7 +116,7 @@ public class ImagesPanel {
 					for (int i = 0; i < alTexts.size (); i++) {
 						iY += UtilFont.MAX_HEIGHT;
 						//UtilsGL.drawStringWithBorder (alTexts.get (i), TEXT_X, iY, ColorGL.WHITE, ColorGL.BLACK);
-						UtilsGL.drawString (alTexts.get (i), TEXT_X, iY, ColorGL.BLACK);
+						UtilsGL.drawString (alTexts.get (i), TEXT_X, iY, ColorGL.WHITE);
 					}
 				}
 			}
@@ -487,11 +487,16 @@ public class ImagesPanel {
 			tileNextMission = new Tile ("nextmission");
 		}
 
-		// Width / height
+		// Width / height: the panel sits under the data center status lines
+		// and above the bottom bar, so at 1024x600 it hides neither (UIPanel
+		// draws it under every other part of the interface); wide enough
+		// for the longest step to fit in that height above the arrows, and
+		// at 640 it still ends left of the minimap
 //		WIDTH = UtilsGL.getWidth () - 512 + 2 * tilePanel[3].getTileWidth ();
-		WIDTH = 384 + 2 * tilePanel[3].getTileWidth ();
+		WIDTH = 576 + 2 * tilePanel[3].getTileWidth ();
+		int iTop = UIPanel.getStatusLineBottom () + 6;
 //		HEIGHT = UtilsGL.getHeight () - 256 + 2 * tilePanel[1].getTileHeight ();
-		HEIGHT = 384 + 2 * tilePanel[1].getTileHeight ();
+		HEIGHT = Math.min (384 + 2 * tilePanel[1].getTileHeight (), BottomMenuUIPanel.bottomPanelY - iTop - 6);
 
 		// Panel x,y
 //		panelPoint.setLocation (renderWidth / 2 - WIDTH / 2, renderHeight / 2 - HEIGHT / 2);
@@ -499,7 +504,7 @@ public class ImagesPanel {
 		if (UIPanel.tileIconTutorial != null) {
 			iIconSize = UIPanel.tileIconTutorial.getTileWidth ();
 		}
-		panelPoint.setLocation (UIPanel.PIXELS_TO_BORDER + iIconSize + MINI_IMAGE_WIDTH / 2 + UIPanel.getImagesPanelOffset (), renderHeight / 2 - (UtilsGL.getHeight () - 256 + 2 * tilePanel[1].getTileHeight ()) / 2);
+		panelPoint.setLocation (UIPanel.PIXELS_TO_BORDER + iIconSize + MINI_IMAGE_WIDTH / 2 + UIPanel.getImagesPanelOffset (), iTop);
 
 		// Close button
 		closeButtonPoint.setLocation (panelPoint.x + WIDTH - UIPanel.tileButtonClose.getTileWidth (), panelPoint.y);

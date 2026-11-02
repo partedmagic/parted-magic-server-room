@@ -544,6 +544,20 @@ public class SmartMenu implements Externalizable {
                         // Prerequisitos
                         setPrerequisites(item, code, parameter);
 
+                        // A description attribute (the Parted Magic tools in menu.xml): the
+                        // tooltip shows the name and that line, as the build menu shows an
+                        // item's description
+                        if (map.getNamedItem("description") != null && (item.getPrerequisites() == null || item.getPrerequisites().isEmpty())) { //$NON-NLS-1$
+                            ArrayList<String> alLines = new ArrayList<String>(2);
+                            ArrayList<ColorGL> alLineColors = new ArrayList<ColorGL>(2);
+                            alLines.add(item.getName());
+                            alLineColors.add(new ColorGL(null));
+                            alLines.add(map.getNamedItem("description").getNodeValue()); //$NON-NLS-1$
+                            alLineColors.add(new ColorGL(null));
+                            item.setPrerequisites(alLines);
+                            item.setPrerequisitesColor(alLineColors);
+                        }
+
                         // Si es un back lo añadimos tal cual, en otro caso miramos que no haya un back, para añadirlo justo antes
                         if (item.getCommand() != null && item.getCommand().equalsIgnoreCase(CommandPanel.COMMAND_BACK)) {
                             smartMenu.addItem(item);

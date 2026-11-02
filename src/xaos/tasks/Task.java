@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.StringTokenizer;
 
 import xaos.compat.input.Keyboard;
@@ -671,6 +672,15 @@ public final class Task implements Externalizable {
             y1 = y0;
         }
         short z = (short) getPointIni().z;
+        // A roof goes on the level getRoofLevel gives for the first corner:
+        // the level above the walls whether the player marked the hall or
+        // moved the view up to mark it from there
+        if (getTask() == TASK_QUEUE_AND_PLACE && z > 0 && getParameter2() != null) {
+            ItemManagerItem imiPlaced = ItemManager.getItem(getParameter2());
+            if (imiPlaced != null && imiPlaced.isDcRoof()) {
+                z = (short) getRoofLevel(getPointIni().x, getPointIni().y, z);
+            }
+        }
 
         Cell cell;
         if (getTask() == TASK_MINE || getTask() == TASK_DIG || getTask() == TASK_MINE_LADDER || getTask() == TASK_CUSTOM_ACTION || getTask() == TASK_CANCEL_ORDER) {
@@ -760,7 +770,8 @@ public final class Task implements Externalizable {
 
                                         Cell cellUnder = World.getCell(x, y, getPointIni().z + 1);
                                         TerrainManagerItem tmi = TerrainManager.getItemByID(cellUnder.getTerrain().getTerrainID());
-                                        if (tmi.getActions().contains(sParameter)) {
+                                        // Only solid ground: over a hole the job would change nothing and nobody can stand there
+                                        if (!cellUnder.isMined() && tmi.getActions().contains(sParameter)) {
                                             // Celda posible para acción de terrain
                                             boolean bCasillaOcupada = cell.getTerrain().hasFluids() || cell.isFlagOrders();
                                             if (!bCasillaOcupada) {
@@ -798,9 +809,15 @@ public final class Task implements Externalizable {
 
                         }
                     } else if (getTask() == Task.TASK_CANCEL_ORDER) {
-                        if (cell.isFlagOrders()) {
-                            Point3DShort p3d = Point3DShort.getPoolInstance(x, y, z);
-                            addHotPoint(new HotPoint(p3d, p3d));
+                        // Also the levels between the view and the cell
+                        // picked: from a level up the 3D mouse lands on the
+                        // hall's floor, under a roof order on top of the walls
+                        int zTop = Math.max(0, Math.min(z, Game.getWorld().getView().z));
+                        for (int zCancel = zTop; zCancel <= z; zCancel++) {
+                            if (cells[x][y][zCancel].isFlagOrders()) {
+                                Point3DShort p3d = Point3DShort.getPoolInstance(x, y, zCancel);
+                                addHotPoint(new HotPoint(p3d, p3d));
+                            }
                         }
                     }
                 }
@@ -1123,7 +1140,7 @@ public final class Task implements Externalizable {
             } else {
                 // Miramos si se puede poner el item en todas las casillas (sólo 1, he borrado el width/height)
                 boolean bAvailableForBuilding = true;
-                if (!Item.isCellAvailableForItem(imi, x0, y0, z, true, true)) {
+                if (!Item.isCellAvailableForItem(imi, x0, y0, z, true, true) || xaos.datacenter.DataCenter.getPlaceLimitReason(imi) != null) {
                     bAvailableForBuilding = false;
                 }
                 if (bAvailableForBuilding) {
@@ -1165,6 +1182,9 @@ public final class Task implements Externalizable {
                         }
                     }
                 }
+                // A roof cell nobody can reach yet is queued all the same: its
+                // job waits in TaskManager until the roof or a ladder reaches it
+                // (hasRoofAccess), so no piece is made and then dropped
 
                 boolean bItemEnElMundo = false;
                 if (bAvailableForBuilding) {
@@ -1189,7 +1209,7 @@ public final class Task implements Externalizable {
 												// Caso especial, ladders, estos van en una casilla digada, entonces el A*ZI será distinto
                                                 // Hay que mirar si las casillas adyacentes (desde donde se colocará) son accesibles
                                                 if (ItemManager.getItem(itemAux.getIniHeader()).canBeBuiltOnHoles()) {
-                                                    ArrayList<Point3DShort> alPoints = getAccesingPointsMatchingASZI(x0, y0, z, iItemASZID, getTask());
+                                                    ArrayList<Point3DShort> alPoints = getPlacingPoints(x0, y0, z, iItemASZID, getTask(), ItemManager.getItem(itemAux.getIniHeader()));
                                                     if (alPoints.size() > 0) {
 														// De guais, tenemos casillas accesibles en la misma zona que el item
                                                         // Creamos una tarea de MOVE (como las haul pero persistentes)
@@ -1700,6 +1720,97 @@ public final class Task implements Externalizable {
      * @return una lista de puntos adyacentes accesibles que estén en la zona
      * pasada
      */
+    /**
+     * Where a builder may stand to place an item at x, y, z
+     * (getAccesingPointsMatchingASZI), less the cells below it for a roof
+     * piece: a roof is laid from its own level (the top of a ladder) or from
+     * the roof beside it, not from the hall under it, so the crew needs a
+     * ladder up, as in Towns (Patrick, 2026-10-31: "in towns you needed a
+     * latter to get to the roof as well")
+     */
+    public static ArrayList<Point3DShort> getPlacingPoints(int x, int y, int z, int aszi, int task, ItemManagerItem imi) {
+        ArrayList<Point3DShort> alPoints = getAccesingPointsMatchingASZI(x, y, z, aszi, task);
+        if (imi != null && imi.isDcRoof()) {
+            for (int i = alPoints.size() - 1; i >= 0; i--) {
+                if (alPoints.get(i).z > z) {
+                    alPoints.remove(i);
+                }
+            }
+        }
+        return alPoints;
+    }
+
+    /**
+     * @return true when someone can stand where a roof piece at x, y, z is
+     *         laid from (getPlacingPoints): on its level beside it, or on the
+     *         roof next to it.  A roof job waits in TaskManager until then
+     */
+    public static boolean hasRoofAccess(int x, int y, int z) {
+        // Only where the crew can walk to: the top of a roof piece nobody
+        // can reach (no ladder yet) is a walkable cell of its own A* zone
+        HashSet<Integer> hsCrewZones = new HashSet<Integer>();
+        for (Integer iID : World.getCitizenIDs()) {
+            LivingEntity le = World.getLivingEntityByID(iID.intValue());
+            if (le != null) {
+                hsCrewZones.add(Integer.valueOf(World.getCell(le.getCoordinates()).getAstarZoneID()));
+            }
+        }
+        for (Point3DShort p3d : getAccesingPoints(x, y, z, TASK_QUEUE_AND_PLACE)) {
+            if (p3d.z <= z && UtilsGeometry.isInsideMap(p3d.x, p3d.y, p3d.z)) {
+                int iZone = World.getCell(p3d).getAstarZoneID();
+                if (iZone != -1 && hsCrewZones.contains(Integer.valueOf(iZone))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The level a roof order goes on, from the cell its first corner picked
+     * (Patrick, 2026-10-31: "build roofs is broken it works nothing like
+     * towns did").  Marked from the level above the walls, as in Towns (the
+     * view moved up with the mouse wheel, Q or the level buttons), the
+     * corner is open air or a roof piece already there: the roof goes on
+     * that level.  Marked on the hall itself, the corner is a cell someone
+     * stands in (ground or a base item under it) or a wall: the roof goes on
+     * the level above.  The first build always went a level above the
+     * corner, so a corner picked from above (the 3D mouse off, or on the
+     * first strip of roof) sent the order two levels up, where nobody could
+     * reach it, and nothing was built.
+     *
+     * @return the roof's level for a corner at x, y, z
+     */
+    public static int getRoofLevel(int x, int y, int z) {
+        if (z <= 0 || !UtilsGeometry.isInsideMap(x, y, z)) {
+            return z;
+        }
+        Cell cell = World.getCell(x, y, z);
+        if (!cell.isMined()) {
+            return z - 1;
+        }
+        Item item = cell.getItem();
+        ItemManagerItem imi = item == null ? null : ItemManager.getItem(item.getIniHeader());
+        if (imi != null && imi.isDcRoof()) {
+            return z;
+        }
+        if (imi != null && (imi.isWall() || imi.isBlocky())) {
+            return z - 1;
+        }
+        if (z < World.MAP_DEPTH - 1) {
+            Cell cellBelow = World.getCell(x, y, z + 1);
+            if (!cellBelow.isMined()) {
+                return z - 1;
+            }
+            Item itemBelow = cellBelow.getItem();
+            ItemManagerItem imiBelow = itemBelow == null ? null : ItemManager.getItem(itemBelow.getIniHeader());
+            if (imiBelow != null && imiBelow.isBase()) {
+                return z - 1;
+            }
+        }
+        return z;
+    }
+
     public static ArrayList<Point3DShort> getAccesingPointsMatchingASZI(Point3DShort p3d, int aszi, int task) {
         return getAccesingPointsMatchingASZI(p3d.x, p3d.y, p3d.z, aszi, task);
     }

@@ -4,10 +4,10 @@
 		<numLevelsOutside>12</numLevelsOutside>
 		<numLevelsUnderground>20</numLevelsUnderground>
 		<mainTerrain>snow</mainTerrain>
-		<numCitizens>11</numCitizens>
+		<numCitizens>10</numCitizens>
 		<startingLevel>11</startingLevel>
-		<startingEvents>dawn,hot,cold</startingEvents>
-		<startingEventsPCT>100,10,8</startingEventsPCT>
+		<startingEvents>dawn,cold</startingEvents>
+		<startingEventsPCT>100,8</startingEventsPCT>
 		<numGods>2d2+1</numGods>
 	</init>
 
@@ -83,81 +83,6 @@
 		<eastPCT>6</eastPCT>
 		<westPCT>6</westPCT>
 		<upPCT>1</upPCT>
-		<downPCT>5</downPCT>
-	</seed>
-
-	<!-- 8 coal seeds -->
-	<seed id="seedcoal">
-		<type>coal</type>
-		<num>12</num>
-		<level>1d7+18</level>
-		<turns>50</turns>
-
-		<northPCT>6</northPCT>
-		<southPCT>6</southPCT>
-		<eastPCT>6</eastPCT>
-		<westPCT>6</westPCT>
-		<upPCT>4</upPCT>
-		<downPCT>5</downPCT>
-	</seed>
-
-	<!-- 8 iron seeds -->
-	<seed id="seediron">
-		<type>iron</type>
-		<num>12</num>
-		<level>1d9+19</level>
-		<turns>50</turns>
-
-		<northPCT>6</northPCT>
-		<southPCT>6</southPCT>
-		<eastPCT>6</eastPCT>
-		<westPCT>6</westPCT>
-		<upPCT>4</upPCT>
-		<downPCT>5</downPCT>
-	</seed>
-
-	<!-- 8 copper seeds -->
-	<seed id="seedcopper">
-		<type>copper</type>
-		<num>12</num>
-		<level>1d9+19</level>
-		<turns>50</turns>
-
-		<northPCT>6</northPCT>
-		<southPCT>6</southPCT>
-		<eastPCT>6</eastPCT>
-		<westPCT>6</westPCT>
-		<upPCT>4</upPCT>
-		<downPCT>5</downPCT>
-	</seed>
-
-	<!-- 3 gold seeds , very rare -->
-	<seed id="seedgold">
-		<type>gold</type>
-		<num>5</num>
-		<level>1d6+22</level>
-		<turns>20</turns>
-
-		<northPCT>6</northPCT>
-		<southPCT>6</southPCT>
-		<eastPCT>6</eastPCT>
-		<westPCT>6</westPCT>
-		<upPCT>2</upPCT>
-		<downPCT>5</downPCT>
-	</seed>
-
-	<!-- 4 silver seeds, pretty rare -->
-	<seed id="seedsilver">
-		<type>silver</type>
-		<num>6</num>
-		<level>1d6+22</level>
-		<turns>30</turns>
-
-		<northPCT>6</northPCT>
-		<southPCT>6</southPCT>
-		<eastPCT>6</eastPCT>
-		<westPCT>6</westPCT>
-		<upPCT>2</upPCT>
 		<downPCT>5</downPCT>
 	</seed>
 

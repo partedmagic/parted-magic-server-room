@@ -64,6 +64,17 @@ public class ActionManager {
         }
     }
 
+    /**
+     * @return every job definition (xaos.datacenter.Boxes looks up the install
+     *         job of each boxed piece of gear)
+     */
+    public static java.util.Collection<ActionManagerItem> getAllItems() {
+        if (itemList == null) {
+            loadItems();
+        }
+        return itemList.values();
+    }
+
     public static ActionManagerItem getItem(String sID) {
         if (itemList == null) {
             loadItems();

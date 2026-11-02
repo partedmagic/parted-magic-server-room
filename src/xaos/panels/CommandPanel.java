@@ -3,6 +3,7 @@ package xaos.panels;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.io.File;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 
 import xaos.compat.opengl.Display;
@@ -17,6 +18,7 @@ import xaos.data.CitizenGroupData;
 import xaos.data.CitizenGroups;
 import xaos.data.Type;
 import xaos.data.Types;
+import xaos.datacenter.DataCenter;
 import xaos.events.EventManager;
 import xaos.events.EventManagerItem;
 import xaos.main.Game;
@@ -223,6 +225,16 @@ public final class CommandPanel {
 
     private static SmartMenu currentMenu;
 
+    // The game menu (Escape) pauses the game while it is open, as the trade
+    // window does (updateGameMenuPause)
+    private static ContextMenu gameMenu;
+    private static boolean gameMenuPausing;
+    private static boolean gameMenuPausedBefore;
+
+    // The panel shown when the site is lost (DataCenter), kept up, with the
+    // game paused, until the player goes back to the main menu
+    private static ContextMenu siteLostMenu;
+
     public int renderX;
     public int renderY;
     public int renderWidth;
@@ -235,6 +247,69 @@ public final class CommandPanel {
 
     public static void initialize(String sCampaignID, String sMissionID) {
         loadMenu(sCampaignID, sMissionID);
+        gameMenu = null;
+        gameMenuPausing = false;
+        siteLostMenu = null;
+    }
+
+    /**
+     * The site is lost (DataCenter): a panel that says why and how long the
+     * site lasted, with only the way back to the main menu
+     */
+    public static void showSiteLost(String sReason, int iDays) {
+        if (Game.getCurrentState() == Game.STATE_CREATING_TASK) {
+            Game.deleteCurrentTask();
+        }
+        SmartMenu smLost = new SmartMenu();
+        smLost.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, Messages.getString("CommandPanel.lostTitle"), null, null, null)); //$NON-NLS-1$
+        smLost.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
+        smLost.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, sReason, null, null, null));
+        smLost.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, MessageFormat.format(Messages.getString("CommandPanel.lostDays"), iDays), null, null, null)); //$NON-NLS-1$
+        smLost.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
+        smLost.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("CommandPanel.lostMenu"), null, COMMAND_EXIT_TO_MAIN_MENU_NOSAVE, null)); //$NON-NLS-1$
+        siteLostMenu = new ContextMenu();
+        siteLostMenu.setSmartMenu(smLost);
+        siteLostMenu.setX(UtilsGL.getWidth() / 2 - siteLostMenu.getWidth() / 2);
+        siteLostMenu.setY(UtilsGL.getHeight() / 2 - siteLostMenu.getHeight() / 2);
+        Game.setContextMenu(siteLostMenu);
+        Game.pause(false);
+    }
+
+    /**
+     * Pauses the game while the game menu (Escape) is open, its Options pages
+     * included, and resumes it when the menu closes, however it closes,
+     * unless it was paused before.  Every frame (Game, before the turn).  A
+     * lost site keeps its panel up and the game paused.
+     */
+    public static void updateGameMenuPause() {
+        if (siteLostMenu != null && DataCenter.isSiteLost()) {
+            if (Game.getCurrentState() != Game.STATE_SHOWING_CONTEXT_MENU || Game.getCurrentContextMenu() != siteLostMenu) {
+                Game.setContextMenu(siteLostMenu);
+            }
+            Game.pause(false);
+            return;
+        }
+        boolean bOpen = gameMenu != null && Game.getCurrentState() == Game.STATE_SHOWING_CONTEXT_MENU && Game.getCurrentContextMenu() == gameMenu;
+        if (bOpen && !gameMenuPausing) {
+            gameMenuPausing = true;
+            gameMenuPausedBefore = Game.isPaused();
+            Game.pause(false);
+        } else if (!bOpen && gameMenuPausing) {
+            gameMenuPausing = false;
+            gameMenu = null;
+            if (!gameMenuPausedBefore) {
+                Game.resume(false);
+            }
+        }
+    }
+
+    /**
+     * @return true when the game is paused only because the game menu is
+     *         open, so a save made from the menu keeps the game running
+     *         (UtilsSavegame)
+     */
+    public static boolean isPausedByGameMenu() {
+        return gameMenuPausing && !gameMenuPausedBefore;
     }
 
     private static void loadMenu(String sCampaignID, String sMissionID) {
@@ -296,10 +371,14 @@ public final class CommandPanel {
         menuAux.setDynamic(true);
         menuAux.setMaintainOpen(true);
         menuOptionsGame.addItem(menuAux);
-        menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.77"), null, CommandPanel.COMMAND_MM_SWITCH_DISABLE_GODS, null, null, null); //$NON-NLS-1$
-        menuAux.setDynamic(true);
-        menuAux.setMaintainOpen(true);
-        menuOptionsGame.addItem(menuAux);
+        // The gods and the sieges are off in this game: the same guards as
+        // the main menu's copy of these options (MainMenuPanel)
+        if (TownsProperties.GODS_ACTIVATED) {
+            menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.77"), null, CommandPanel.COMMAND_MM_SWITCH_DISABLE_GODS, null, null, null); //$NON-NLS-1$
+            menuAux.setDynamic(true);
+            menuAux.setMaintainOpen(true);
+            menuOptionsGame.addItem(menuAux);
+        }
         menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.28"), null, CommandPanel.COMMAND_MM_SWITCH_PAUSE, null, null, null); //$NON-NLS-1$
         menuAux.setDynamic(true);
         menuAux.setMaintainOpen(true);
@@ -308,14 +387,16 @@ public final class CommandPanel {
         menuAux.setDynamic(true);
         menuAux.setMaintainOpen(true);
         menuOptionsGame.addItem(menuAux);
-        menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.32"), null, CommandPanel.COMMAND_MM_SWITCH_SIEGES, null, null, null); //$NON-NLS-1$
-        menuAux.setDynamic(true);
-        menuAux.setMaintainOpen(true);
-        menuOptionsGame.addItem(menuAux);
-        menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.36"), null, CommandPanel.COMMAND_MM_SWITCH_SIEGE_PAUSE, null, null, null); //$NON-NLS-1$
-        menuAux.setDynamic(true);
-        menuAux.setMaintainOpen(true);
-        menuOptionsGame.addItem(menuAux);
+        if (TownsProperties.FIGHTING) {
+            menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.32"), null, CommandPanel.COMMAND_MM_SWITCH_SIEGES, null, null, null); //$NON-NLS-1$
+            menuAux.setDynamic(true);
+            menuAux.setMaintainOpen(true);
+            menuOptionsGame.addItem(menuAux);
+            menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.36"), null, CommandPanel.COMMAND_MM_SWITCH_SIEGE_PAUSE, null, null, null); //$NON-NLS-1$
+            menuAux.setDynamic(true);
+            menuAux.setMaintainOpen(true);
+            menuOptionsGame.addItem(menuAux);
+        }
         menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.66"), null, CommandPanel.COMMAND_MM_SWITCH_CARAVAN_PAUSE, null, null, null); //$NON-NLS-1$
         menuAux.setDynamic(true);
         menuAux.setMaintainOpen(true);
@@ -721,6 +802,9 @@ public final class CommandPanel {
                 task.setParameter(sParameter);
                 Game.getWorld().getTaskManager().addTask(task);
             } else if (sCommand.equals(COMMAND_CONVERT_TO_SOLDIER)) {
+                if (!TownsProperties.FIGHTING) {
+                    return;
+                }
                 Task task = new Task(Task.TASK_CONVERT_TO_SOLDIER);
                 task.setTile(tile, iconType);
                 task.setParameter(sParameter);
@@ -996,8 +1080,10 @@ public final class CommandPanel {
                 SmartMenu smSure = new SmartMenu(SmartMenu.TYPE_MENU, Messages.getString("CommandPanel.1"), smExit, null, null); //$NON-NLS-1$
                 smSure.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("CommandPanel.3"), null, COMMAND_EXIT_TO_MAIN_MENU_NOSAVE, null)); //$NON-NLS-1$
                 smSure.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
-                smExit.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("CommandPanel.7"), null, COMMAND_BURY, null)); //$NON-NLS-1$
-                smExit.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
+                if (Game.isAllowBury()) {
+                    smExit.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("CommandPanel.7"), null, COMMAND_BURY, null)); //$NON-NLS-1$
+                    smExit.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
+                }
                 smSure.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("CommandPanel.5"), null, COMMAND_BACK, null)); //$NON-NLS-1$
 
                 smExit.addItem(smSure);
@@ -1010,6 +1096,7 @@ public final class CommandPanel {
                 menuExit.setX(UtilsGL.getWidth() / 2 - menuExit.getWidth() / 2);
                 menuExit.setY(UtilsGL.getHeight() / 2 - menuExit.getHeight() / 2);
                 Game.setContextMenu(menuExit);
+                gameMenu = menuExit;
 
                 // Tutorial flow
                 Game.updateTutorialFlow (TutorialTrigger.TYPE_INT_ICONHIT, TutorialTrigger.ICON_INT_SETTINGS, null);

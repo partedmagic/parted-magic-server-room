@@ -3,6 +3,7 @@ package xaos.panels;
 import java.awt.Point;
 import java.util.ArrayList;
 import org.lwjgl.opengl.GL11;
+import xaos.TownsProperties;
 import xaos.campaign.TutorialFlow;
 import xaos.data.CitizenGroups;
 import xaos.data.EquippedData;
@@ -656,7 +657,7 @@ public final class LivingsUIPanel {
 				}
 				iLevel = World.MAP_NUM_LEVELS_OUTSIDE - iLevel;
 				sText = Integer.toString (iLevel);
-				UtilsGL.drawString (sText, (livingsPanelIconRestrictUpPoint.x + UIPanel.tileIconLevelUp.getTileWidth ()) + ((livingsPanelIconRestrictDownPoint.x) - (livingsPanelIconRestrictUpPoint.x + UIPanel.tileIconLevelUp.getTileWidth ())) / 2 - UtilFont.getWidth (sText) / 2, livingsPanelIconRestrictUpPoint.y + UIPanel.tileIconLevelUp.getTileHeight () / 2 - UtilFont.MAX_HEIGHT / 2, ColorGL.BLACK);
+				UtilsGL.drawString (sText, (livingsPanelIconRestrictUpPoint.x + UIPanel.tileIconLevelUp.getTileWidth ()) + ((livingsPanelIconRestrictDownPoint.x) - (livingsPanelIconRestrictUpPoint.x + UIPanel.tileIconLevelUp.getTileWidth ())) / 2 - UtilFont.getWidth (sText) / 2, livingsPanelIconRestrictUpPoint.y + UIPanel.tileIconLevelUp.getTileHeight () / 2 - UtilFont.MAX_HEIGHT / 2, ColorGL.WHITE);
 			}
 
 			UtilsGL.glEnd ();
@@ -995,7 +996,7 @@ public final class LivingsUIPanel {
 		GL11.glBindTexture (GL11.GL_TEXTURE_2D, Game.TEXTURE_FONT_ID);
 		GL11.glTexEnvf (GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_MODE, GL11.GL_MODULATE);
 		UtilsGL.glBegin (GL11.GL_QUADS);
-		UtilsGL.drawString (sText, livingsPanelPagesPoint.x - UtilFont.getWidth (sText) / 2, livingsPanelPagesPoint.y, ColorGL.BLACK);
+		UtilsGL.drawString (sText, livingsPanelPagesPoint.x - UtilFont.getWidth (sText) / 2, livingsPanelPagesPoint.y, ColorGL.WHITE);
 
 		// Restrict
 		if ((getLivingsPanelActive () == LIVINGS_PANEL_TYPE_CITIZENS && livingsPanelCitizensGroupActive == -1) || (getLivingsPanelActive () == LIVINGS_PANEL_TYPE_HEROES)) {
@@ -1007,7 +1008,7 @@ public final class LivingsUIPanel {
 			}
 			iLevel = World.MAP_NUM_LEVELS_OUTSIDE - iLevel;
 			sText = Integer.toString (iLevel);
-			UtilsGL.drawString (sText, (livingsPanelIconRestrictUpPoint.x + UIPanel.tileIconLevelUp.getTileWidth ()) + ((livingsPanelIconRestrictDownPoint.x) - (livingsPanelIconRestrictUpPoint.x + UIPanel.tileIconLevelUp.getTileWidth ())) / 2 - UtilFont.getWidth (sText) / 2, livingsPanelIconRestrictUpPoint.y + UIPanel.tileIconLevelUp.getTileHeight () / 2 - UtilFont.MAX_HEIGHT / 2, ColorGL.BLACK);
+			UtilsGL.drawString (sText, (livingsPanelIconRestrictUpPoint.x + UIPanel.tileIconLevelUp.getTileWidth ()) + ((livingsPanelIconRestrictDownPoint.x) - (livingsPanelIconRestrictUpPoint.x + UIPanel.tileIconLevelUp.getTileWidth ())) / 2 - UtilFont.getWidth (sText) / 2, livingsPanelIconRestrictUpPoint.y + UIPanel.tileIconLevelUp.getTileHeight () / 2 - UtilFont.MAX_HEIGHT / 2, ColorGL.WHITE);
 		}
 
 		UtilsGL.glEnd ();
@@ -1719,6 +1720,21 @@ public final class LivingsUIPanel {
 
 			// Jobs groups
 			livingsPanelRowJobsGroupsPoints[i] = new Point (livingsPanelRowProfessionPoints[i].x + tileLivingsRowProfession.getTileWidth (), livingsPanelRowProfessionPoints[i].y + tileLivingsRowProfession.getTileHeight () / 2 - tileLivingsRowJobsGroups.getTileHeight () / 2);
+
+			if (!TownsProperties.FIGHTING) {
+				// No fighting: no equipment, auto-equip or soldier buttons.  They
+				// go off the panel, where nothing draws or clicks them, and the
+				// jobs and groups buttons follow the technician
+				livingsPanelRowHeadPoints[i] = new Point (UIPanel.OFF_SCREEN);
+				livingsPanelRowBodyPoints[i] = new Point (UIPanel.OFF_SCREEN);
+				livingsPanelRowLegsPoints[i] = new Point (UIPanel.OFF_SCREEN);
+				livingsPanelRowFeetPoints[i] = new Point (UIPanel.OFF_SCREEN);
+				livingsPanelRowWeaponPoints[i] = new Point (UIPanel.OFF_SCREEN);
+				livingsPanelRowAutoequipPoints[i] = new Point (UIPanel.OFF_SCREEN);
+				livingsPanelRowConvertCivilianSoldierPoints[i] = new Point (UIPanel.OFF_SCREEN);
+				livingsPanelRowProfessionPoints[i] = new Point (livingsPanelRowPoints[i].x + UIPanel.tileBottomItem.getTileWidth () + UIPanel.tileBottomItem.getTileWidth () / 2, livingsPanelRowPoints[i].y + UIPanel.tileBottomItem.getTileHeight () / 2 - tileLivingsRowProfession.getTileHeight () / 2);
+				livingsPanelRowJobsGroupsPoints[i] = new Point (livingsPanelRowProfessionPoints[i].x + tileLivingsRowProfession.getTileWidth (), livingsPanelRowProfessionPoints[i].y + tileLivingsRowProfession.getTileHeight () / 2 - tileLivingsRowJobsGroups.getTileHeight () / 2);
+			}
 		}
 		if (iPanelTypeActive == LIVINGS_PANEL_TYPE_SOLDIERS) {
 			if (livingsPanelSoldiersGroupActive == -1) {

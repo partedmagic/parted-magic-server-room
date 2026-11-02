@@ -447,6 +447,18 @@ public class Tile implements Externalizable {
         return numericIniHeader;
     }
 
+    /**
+     * Draw this tile with another graphics.ini entry's picture (one that is
+     * not animated), keeping its own name.  Unlike changeGraphic it draws no
+     * dice, so a seeded run stays the same (an item's look, Item)
+     */
+    public void setLook(String sLookIniHeader) {
+        setTextureID(sLookIniHeader, getIniHeader());
+        setTileSetCoordinates(sLookIniHeader, getIniHeader());
+        setTileSize(sLookIniHeader, getIniHeader());
+        setTileSetTexCoordinates();
+    }
+
     public void changeGraphic(String sNewIniHeader) {
         setTextureID(sNewIniHeader, getIniHeader());
         setTileSetCoordinates(sNewIniHeader, getIniHeader());

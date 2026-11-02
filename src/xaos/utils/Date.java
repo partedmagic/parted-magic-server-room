@@ -69,7 +69,16 @@ public final class Date implements Externalizable {
     }
 
     public String getString() {
-        return day + " / " + month + " / " + year; //$NON-NLS-1$ //$NON-NLS-2$
+        // Days since the start: drives and pay go by days.  Towns showed
+        // day / month / year, which read as "1/1/1"
+        return Messages.getString("Date.0") + getDaysSinceStart(); //$NON-NLS-1$
+    }
+
+    /**
+     * @return the day number the top bar shows, 1 on the first day
+     */
+    public int getDaysSinceStart() {
+        return (year - 1) * MONTHS_PER_YEAR * DAYS_PER_MONTH + (month - 1) * DAYS_PER_MONTH + day;
     }
 
     public String toString() {

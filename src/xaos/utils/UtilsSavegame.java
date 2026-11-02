@@ -18,8 +18,11 @@ import xaos.TownsProperties;
 import xaos.actions.ActionPriorityManager;
 import xaos.campaign.MissionData;
 import xaos.data.BuryData;
+import xaos.datacenter.Crew;
+import xaos.datacenter.DataCenter;
 import xaos.main.Game;
 import xaos.main.World;
+import xaos.panels.CommandPanel;
 import xaos.panels.MessagesPanel;
 import xaos.stockpiles.Stockpile;
 import xaos.tiles.Cell;
@@ -152,11 +155,15 @@ public final class UtilsSavegame {
             ActionPriorityManager.save(oos);
             Game.iError = 12017;
 
-            // Pausa
-            oos.writeBoolean(Game.isPaused());
+            // Pausa (not the game menu's own pause: a save made from the
+            // menu keeps the game running)
+            oos.writeBoolean(Game.isPaused() && !CommandPanel.isPausedByGameMenu());
 
             // Mission data
            	oos.writeObject (Game.getCurrentMissionData ());
+
+            // The data center's own state (DataCenter.writeExternal)
+            DataCenter.writeExternal(oos);
 
             Game.iError = 12018;
             oos.flush();
@@ -281,6 +288,13 @@ public final class UtilsSavegame {
             // Mission data
             if (Game.SAVEGAME_LOADING_VERSION >= Game.SAVEGAME_V14d) {
             	Game.setCurrentMissionData ((MissionData) ois.readObject ());
+            }
+
+            // The data center's own state (DataCenter.writeExternal)
+            DataCenter.reset();
+            Crew.setLoadingVersion(Game.SAVEGAME_LOADING_VERSION);
+            if (Game.SAVEGAME_LOADING_VERSION >= Game.SAVEGAME_BILLS) {
+                DataCenter.readExternal(ois);
             }
 
             ois.close();

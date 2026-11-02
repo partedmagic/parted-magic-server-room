@@ -10,11 +10,15 @@ package xaos;
 public class TownsProperties {
 
     public final static boolean GODS_ACTIVATED = false;
+    // Parted Magic Server Room has no fighting: no soldiers, heroes or sieges
+    public final static boolean FIGHTING = false;
     public final static boolean DEBUG_MODE = false; //${debugMode}; //should be false in production
     public final static boolean DEMO_VERSION = false; //${demoVersion};
     public final static boolean TEST_COMMANDS = false; //${testCommands}; //should be false in production
-    public final static String GAME_NAME = "Towns"; //$NON-NLS-1$
-    public final static String GAME_VERSION = "v14f";
+    public final static String GAME_NAME = "Parted Magic Server Room"; //$NON-NLS-1$
+    // The release version, the packaged app's too (build.gradle appVersion,
+    // whose first number macOS wants at least 1); Towns' was "v14f"
+    public final static String GAME_VERSION = "1.0.0";
     public final static String GAME_VERSION_FULL = GAME_VERSION; //"${project.version}.${buildNumber} (" + "${buildRevision}".substring(0, 7) + ")"; //$NON-NLS-1$
     public final static String GAME_VERSION_SHORT = GAME_VERSION; //"${project.version}";
 //    public final static String NAMED_VERSION_FOR = "${namedVersionFor}";

@@ -381,21 +381,42 @@ public class Stockpile implements Externalizable {
 	 * @return true si en la casilla pasada se puede crear un stockpile, false en otro caso
 	 */
 	public static boolean isCellAvailableForStockpile (int x, int y, int z) {
+		return getCellUnavailableReason (x, y, z) == null;
+	}
+
+
+	/**
+	 * Why a stockpile cannot be made on this cell (the placement tooltip
+	 * says it: MainPanel.renderTask)
+	 *
+	 * @return the messages.properties key that says why, or null when it can
+	 */
+	public static String getCellUnavailableReason (int x, int y, int z) {
 		// Fuera del mapa
 		if (x < 0 || x >= World.MAP_WIDTH || y < 0 || y >= World.MAP_HEIGHT || z < 0 || z >= World.MAP_DEPTH) {
-			return false;
+			return "Item.placeOffMap"; //$NON-NLS-1$
 		}
 
 		Cell cell = World.getCell (x, y, z);
 
-		boolean checkBasics = cell.isDiscovered () && cell.isMined () && !cell.hasZone () && !cell.getTerrain ().hasFluids () && !cell.hasStockPile ();
-
-		if (!checkBasics) {
-			return false;
+		if (!cell.isDiscovered ()) {
+			return "Item.placeNotExplored"; //$NON-NLS-1$
+		}
+		if (!cell.isMined ()) {
+			return "Item.placeSolid"; //$NON-NLS-1$
+		}
+		if (cell.hasZone ()) {
+			return "Stockpile.placeZone"; //$NON-NLS-1$
+		}
+		if (cell.getTerrain ().hasFluids ()) {
+			return "Item.placeWater"; //$NON-NLS-1$
+		}
+		if (cell.hasStockPile ()) {
+			return "Stockpile.placePile"; //$NON-NLS-1$
 		}
 
 		if (cell.hasBuilding ()) {
-			return false;
+			return "Item.placeTaken"; //$NON-NLS-1$
 		}
 
 		// Falta mirar items
@@ -403,13 +424,13 @@ public class Stockpile implements Externalizable {
 			Entity entity = cell.getEntity ();
 			if (entity != null && entity instanceof Item) {
 				if (((Item) entity).isLocked ()) {
-					return false;
+					return "Item.placeTaken"; //$NON-NLS-1$
 				}
 
 				// Miramos que tenga tipo
 				ItemManagerItem imi = ItemManager.getItem (entity.getIniHeader ());
 				if (imi == null || imi.getType () == null) {
-					return false;
+					return "Item.placeTaken"; //$NON-NLS-1$
 				}
 			}
 		}
@@ -421,17 +442,17 @@ public class Stockpile implements Externalizable {
 				Item itemUnder = World.getCell (x, y, z + 1).getItem ();
 				if (itemUnder != null) {
 					if (!ItemManager.getItem (itemUnder.getIniHeader ()).isBase ()) {
-						return false;
+						return "Item.placeNoFloor"; //$NON-NLS-1$
 					}
 				} else {
-					return false;
+					return "Item.placeNoFloor"; //$NON-NLS-1$
 				}
 			} else {
-				return false;
+				return "Item.placeNoFloor"; //$NON-NLS-1$
 			}
 		}
 
-		return true;
+		return null;
 	}
 
 

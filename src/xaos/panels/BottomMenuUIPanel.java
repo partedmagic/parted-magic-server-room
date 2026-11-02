@@ -116,7 +116,7 @@ public final class BottomMenuUIPanel {
 		// UI TEXTURE bottom panel
 		Point point;
 		for (int i = bottomPanelItemIndex; i < bottomPanelItemIndex + BOTTOM_PANEL_NUM_ITEMS; i++) {
-			if (i > currentMenu.getItems ().size ()) {
+			if (i >= currentMenu.getItems ().size ()) {
 				break;
 			}
 
@@ -212,7 +212,7 @@ public final class BottomMenuUIPanel {
 		 */
 		// BOTTOM PANEL
 		for (int i = bottomPanelItemIndex; i < bottomPanelItemIndex + BOTTOM_PANEL_NUM_ITEMS; i++) {
-			if (i > currentMenu.getItems ().size ()) {
+			if (i >= currentMenu.getItems ().size ()) {
 				break;
 			}
 
@@ -287,6 +287,10 @@ public final class BottomMenuUIPanel {
 		if (y >= bottomPanelY && y < (bottomPanelY + BOTTOM_PANEL_HEIGHT)) {
 			Point point;
 			for (int i = 0; i < BOTTOM_PANEL_NUM_ITEMS; i++) {
+				// A bar shorter than its ten slots leaves the last ones empty
+				if (currentMenu == null || (bottomPanelItemIndex + i) >= currentMenu.getItems ().size ()) {
+					break;
+				}
 				point = bottomPanelItemsPosition.get (i);
 				if (x >= point.x && x < (point.x + UIPanel.BOTTOM_ITEM_WIDTH)) {
 					if (!UIPanel.tileBottomItemAlpha[x - point.x][y - point.y]) {
@@ -331,7 +335,11 @@ public final class BottomMenuUIPanel {
 
 	public static void createBottomSubPanel (SmartMenu smItem) {
 		int iMaxItems = smItem.getItems ().size ();
-		BOTTOM_SUBPANEL_WIDTH = (RightMenuUIPanel.menuPanelPoint.x - bottomPanelX) - 2 * UIPanel.PIXELS_TO_BORDER;
+		// The row ends where a two-column build menu starts.  The build menu's
+		// own left edge moves with the group shown last (Data center is six
+		// columns), and with it this row went from one line to two in play
+		int iRight = RightMenuUIPanel.tileOpenCloseRightMenuPoint.x - (2 * (RightMenuUIPanel.MENU_ITEM_WIDTH + UIPanel.PIXELS_TO_BORDER) + UIPanel.PIXELS_TO_BORDER);
+		BOTTOM_SUBPANEL_WIDTH = (iRight - bottomPanelX) - 2 * UIPanel.PIXELS_TO_BORDER;
 
 		BOTTOM_SUBPANEL_NUM_ITEMS_X = (BOTTOM_SUBPANEL_WIDTH - UIPanel.PIXELS_TO_BORDER) / (BOTTOM_SUBITEM_WIDTH + UIPanel.PIXELS_TO_BORDER);
 		if (BOTTOM_SUBPANEL_NUM_ITEMS_X < 1) {

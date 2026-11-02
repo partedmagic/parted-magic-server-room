@@ -3,4 +3,6 @@ plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
 }
 
-rootProject.name = 'OpenTowns'
+// The game's name without spaces: the jar, build/install and the release
+// zips are named after it (build.gradle's appName is the name players see)
+rootProject.name = 'PartedMagicServerRoom'

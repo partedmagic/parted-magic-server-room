@@ -381,13 +381,43 @@ public final class TradeUIPanel {
 
 		// Caravan coins
 		sText = Integer.toString (caravanData.getCoins ());
-		UtilsGL.drawString (sText, tradePanel.getCaravanCoinsIconPoint ().x + TradePanel.tileTradeCaravanCoins.getTileWidth () / 2 - UtilFont.getWidth (sText) / 2, tradePanel.getCaravanCoinsIconPoint ().y + TradePanel.tileTradeCaravanCoins.getTileHeight (), ColorGL.BLACK);
-		// Cost
-		sText = Integer.toString (tradePanel.getCost ());
-		UtilsGL.drawString (sText, tradePanel.getCostPoint ().x + TradePanel.tileTradeCost.getTileWidth () / 2 - UtilFont.getWidth (sText) / 2, tradePanel.getCostPoint ().y + TradePanel.tileTradeCost.getTileHeight (), tradePanel.getCost () >= 0 ? ColorGL.BLACK : ColorGL.RED);
+		UtilsGL.drawString (sText, tradePanel.getCaravanCoinsIconPoint ().x + TradePanel.tileTradeCaravanCoins.getTileWidth () / 2 - UtilFont.getWidth (sText) / 2, tradePanel.getCaravanCoinsIconPoint ().y + TradePanel.tileTradeCaravanCoins.getTileHeight (), ColorGL.WHITE);
+		// Cost, inside its box: who pays and how much (red when that side
+		// is short of coins), or what Confirm does with nothing picked
+		String sLabel;
+		ColorGL colorCost;
+		int iCost = tradePanel.getCost ();
+		boolean bNothingPicked = caravanData.getMenuCaravanToBuy ().getItems ().size () == 0 && caravanData.getMenuTownToSell ().getItems ().size () == 0;
+		if (bNothingPicked && !bTrading) {
+			sLabel = Messages.getString ("TradeUIPanel.sendAway1"); //$NON-NLS-1$
+			sText = Messages.getString ("TradeUIPanel.sendAway2"); //$NON-NLS-1$
+			colorCost = ColorGL.LIGHT_GRAY;
+		} else if (iCost > 0) {
+			sLabel = Messages.getString ("TradeUIPanel.pay"); //$NON-NLS-1$
+			sText = Integer.toString (iCost);
+			colorCost = (bTrading || tradePanel.isTransactionReady ()) ? ColorGL.WHITE : ColorGL.RED;
+		} else if (iCost < 0) {
+			sLabel = Messages.getString ("TradeUIPanel.get"); //$NON-NLS-1$
+			sText = Integer.toString (-iCost);
+			colorCost = (bTrading || tradePanel.isTransactionReady ()) ? ColorGL.GREEN : ColorGL.RED;
+		} else {
+			sLabel = Messages.getString ("TradeUIPanel.even"); //$NON-NLS-1$
+			sText = "0"; //$NON-NLS-1$
+			colorCost = ColorGL.WHITE;
+		}
+		int iCostX = tradePanel.getCostPoint ().x + TradePanel.tileTradeCost.getTileWidth () / 2;
+		int iCostY = tradePanel.getCostPoint ().y + TradePanel.tileTradeCost.getTileHeight () / 2;
+		UtilsGL.drawString (sLabel, iCostX - UtilFont.getWidth (sLabel) / 2, iCostY - UtilFont.MAX_HEIGHT, ColorGL.LIGHT_GRAY);
+		UtilsGL.drawString (sText, iCostX - UtilFont.getWidth (sText) / 2, iCostY, colorCost);
+		// While the truck is trading the stock columns are hidden: say why,
+		// where the Confirm button was
+		if (bTrading) {
+			sText = Messages.getString ("UIPanel.20"); //$NON-NLS-1$
+			UtilsGL.drawString (sText, tradePanelPoint.x + TRADE_PANEL_WIDTH / 2 - UtilFont.getWidth (sText) / 2, tradePanel.getConfirmPoint ().y + TradePanel.tileTradeConfirm.getTileHeight () / 2 - UtilFont.MAX_HEIGHT / 2, ColorGL.ORANGE);
+		}
 		// Towns coins
 		sText = Integer.toString (Game.getWorld ().getCoins ());
-		UtilsGL.drawString (sText, tradePanel.getTownCoinsIconPoint ().x + TradePanel.tileTradeTownCoins.getTileWidth () / 2 - UtilFont.getWidth (sText) / 2, tradePanel.getTownCoinsIconPoint ().y + TradePanel.tileTradeTownCoins.getTileHeight (), ColorGL.BLACK);
+		UtilsGL.drawString (sText, tradePanel.getTownCoinsIconPoint ().x + TradePanel.tileTradeTownCoins.getTileWidth () / 2 - UtilFont.getWidth (sText) / 2, tradePanel.getTownCoinsIconPoint ().y + TradePanel.tileTradeTownCoins.getTileHeight (), ColorGL.WHITE);
 
 		UtilsGL.glEnd ();
 	}

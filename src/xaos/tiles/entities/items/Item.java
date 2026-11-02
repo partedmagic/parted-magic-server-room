@@ -8,6 +8,7 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import xaos.datacenter.DataCenter;
 import xaos.TownsProperties;
 
 import xaos.actions.ActionManager;
@@ -166,6 +167,25 @@ public class Item extends Entity implements Externalizable {
 
 	public void refreshTransients () {
 		super.refreshTransients ();
+
+		// A thing with several looks (items.xml dcLooks, the snacks): a hash
+		// of its ID (murmur3's finalizer) picks one, so it keeps it after a
+		// load, the four snacks a site starts with (one after another) differ
+		// as dice would, and no dice are drawn.  The Tile constructor gets
+		// here before the ID is set: the Item constructor comes back once it
+		// is
+		if (getID () > 0) {
+			ItemManagerItem imiLooks = ItemManager.getItem (getIniHeader ());
+			if (imiLooks != null && imiLooks.getDcLooks () != null) {
+				int h = getID ();
+				h ^= h >>> 16;
+				h *= 0x85EBCA6B;
+				h ^= h >>> 13;
+				h *= 0xC2B2AE35;
+				h ^= h >>> 16;
+				setLook (imiLooks.getDcLooks ()[Math.floorMod (h, imiLooks.getDcLooks ().length)]);
+			}
+		}
 
 		// Trap (graphic change)
 		if (getTrapCooldown () > 0) {
@@ -370,6 +390,48 @@ public class Item extends Entity implements Externalizable {
 	}
 
 
+    /**
+     * Before an ordered item goes on its cell: something loose lying there (a
+     * snack or a coffee a machine put down, delivered stock, a tomato) moves to
+     * the nearest free cell around it on the same level and walk zone, so the
+     * item goes where it was ordered.  Until 2026-11-01 the place step gave up
+     * instead, and the worker dropped the item loose beside the cell, where it
+     * did nothing and nothing said so (the play to day 30 lost a diesel
+     * generator to a snack from the vending machine); TaskManager dropped an
+     * order whose cell got something on it before a worker took it.
+     *
+     * @return whether the cell is empty now
+     */
+    public static boolean moveLooseItemAside(Cell cell, Point3DShort p3d) {
+        Item loose = cell.getItem();
+        if (loose == null || loose.isLocked()) {
+            return cell.isEmpty();
+        }
+        ItemManagerItem imi = ItemManager.getItem(loose.getIniHeader());
+        if (imi == null || imi.isContainer()) {
+            return false;
+        }
+        int iZone = cell.getAstarZoneID();
+        for (int r = 1; r <= 3; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dy = -r; dy <= r; dy++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dy)) != r || !UtilsGeometry.isInsideMap(p3d.x + dx, p3d.y + dy, p3d.z)) {
+                        continue;
+                    }
+                    Cell other = World.getCell(p3d.x + dx, p3d.y + dy, p3d.z);
+                    if (other.isEmpty() && !other.isFlagOrders() && !other.hasStockPile() && other.getAstarZoneID() == iZone && Item.isCellAvailableForItem(imi, p3d.x + dx, p3d.y + dy, p3d.z, false, false)) {
+                        loose.delete();
+                        loose.init(p3d.x + dx, p3d.y + dy, p3d.z);
+                        other.setEntity(loose);
+                        return cell.isEmpty();
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+
 	/**
 	 * Indica si en las coordenadas pasadas se puede construir un item
 	 * 
@@ -381,9 +443,21 @@ public class Item extends Entity implements Externalizable {
 	 * @return true si en las coordenadas pasadas se puede construir un item
 	 */
 	public static boolean isCellAvailableForItem (ItemManagerItem imi, int x, int y, int z, boolean checkZones, boolean checkDiscovered, boolean checkHabitat, boolean checkPiles) {
+		return getCellUnavailableReason (imi, x, y, z, checkZones, checkDiscovered, checkHabitat, checkPiles) == null;
+	}
+
+
+	/**
+	 * Why an item cannot be built at these coordinates (the placement
+	 * tooltip says it: MainPanel.renderTask)
+	 *
+	 * @return the messages.properties key that says why, or null when it can
+	 *         be built there.  Item.placeZone takes the item's zone names.
+	 */
+	public static String getCellUnavailableReason (ItemManagerItem imi, int x, int y, int z, boolean checkZones, boolean checkDiscovered, boolean checkHabitat, boolean checkPiles) {
 		// Fuera del mapa
 		if (x < 0 || x >= World.MAP_WIDTH || y < 0 || y >= World.MAP_HEIGHT || z < 0 || z >= World.MAP_DEPTH) {
-			return false;
+			return "Item.placeOffMap"; //$NON-NLS-1$
 		}
 
 		// Casilla NO descubierta
@@ -391,12 +465,27 @@ public class Item extends Entity implements Externalizable {
 
 		// No descubierta, no minada, llena
 		if (checkDiscovered && !cell.isDiscovered ()) {
-			return false;
+			return "Item.placeNotExplored"; //$NON-NLS-1$
 		}
 
 		// No minada, no vacía, con fluidos
-		if (!cell.isMined () || !cell.isEmpty () || cell.getTerrain ().hasFluids ()) {
-			return false;
+		if (!cell.isMined ()) {
+			return "Item.placeSolid"; //$NON-NLS-1$
+		}
+		if (!cell.isEmpty ()) {
+			return "Item.placeTaken"; //$NON-NLS-1$
+		}
+		if (cell.getTerrain ().hasFluids ()) {
+			return "Item.placeWater"; //$NON-NLS-1$
+		}
+
+		// A roof piece on top of a ladder or stairs would close the way up
+		// the crew uses to build the roof and come back down
+		if (imi.isDcRoof () && z < (World.MAP_DEPTH - 1)) {
+			Item itemDown = World.getCell (x, y, z + 1).getItem ();
+			if (itemDown != null && ItemManager.getItem (itemDown.getIniHeader ()) != null && ItemManager.getItem (itemDown.getIniHeader ()).isZoneMergerUp ()) {
+				return "Item.placeLadderTop"; //$NON-NLS-1$
+			}
 		}
 
 		// Holes/floor
@@ -406,15 +495,15 @@ public class Item extends Entity implements Externalizable {
 				if (z < (World.MAP_DEPTH - 1)) {
 					Item itemDown = World.getCell (x, y, z + 1).getItem ();
 					if (itemDown == null || !ItemManager.getItem (itemDown.getIniHeader ()).isBase ()) {
-						return false;
+						return "Item.placeNoFloor"; //$NON-NLS-1$
 					}
 				} else {
-					return false;
+					return "Item.placeNoFloor"; //$NON-NLS-1$
 				}
 			}
 		} else {
 			if (!imi.canBeBuiltOnFloor ()) {
-				return false;
+				return "Item.placeNeedsHole"; //$NON-NLS-1$
 			}
 		}
 
@@ -429,10 +518,10 @@ public class Item extends Entity implements Externalizable {
 		// POPOif (z == 0) {
 		if (checkHabitat && z >= World.MAP_NUM_LEVELS_OUTSIDE) {
 			if (imi.getHabitatHeightMin () != -1 && z <= (World.MAP_NUM_LEVELS_OUTSIDE - imi.getHabitatHeightMin ())) {
-				return false;
+				return "Item.placeHeight"; //$NON-NLS-1$
 			}
 			if (imi.getHabitatHeightMax () != -1 && z >= (World.MAP_NUM_LEVELS_OUTSIDE - imi.getHabitatHeightMin ())) {
-				return false;
+				return "Item.placeHeight"; //$NON-NLS-1$
 			}
 			// POPO
 			/*
@@ -445,11 +534,11 @@ public class Item extends Entity implements Externalizable {
 			if (alHabitat != null && alHabitat.size () > 0) {
 				Cell cellUnder = World.getCell (x, y, z + 1);
 				if (!alHabitat.contains (cellUnder.getTerrain ().getTerrainID ())) {
-					return false;
+					return "Item.placeGround"; //$NON-NLS-1$
 				} else {
 					// Habitat correcto, miramos que sea habitat puro
 					if (cell.hasZone () || cell.hasStockPile ()) {
-						return false;
+						return "Item.placeZoneOrPile"; //$NON-NLS-1$
 					}
 				}
 			}
@@ -459,12 +548,12 @@ public class Item extends Entity implements Externalizable {
 		if (checkZones) {
 			if (imi.getZones () != null && imi.getZones ().size () > 0) {
 				if (!cell.hasZone ()) {
-					return false;
+					return "Item.placeZone"; //$NON-NLS-1$
 				}
 
 				Zone zone = Zone.getZone (cell.getZoneID ());
 				if (zone != null && !imi.getZones ().contains (zone.getIniHeader ())) {
-					return false;
+					return "Item.placeZone"; //$NON-NLS-1$
 				}
 			}
 		}
@@ -474,12 +563,12 @@ public class Item extends Entity implements Externalizable {
 			Stockpile pile = Stockpile.getStockpile (x, y, z);
 			if (pile != null) {
 				if (!pile.itemAllowed (imi.getIniHeader ())) {
-					return false;
+					return "Item.placePile"; //$NON-NLS-1$
 				}
 			}
 		}
 
-		return true;
+		return null;
 	}
 
 
@@ -1780,14 +1869,31 @@ public class Item extends Entity implements Externalizable {
 				sm.addItem (new SmartMenu (SmartMenu.TYPE_TEXT, null, null, null, null));
 			}
 
-			// Actions
+			// Actions.  On gear that needs a hand (DataCenter.needsFix) they
+			// go first, under the tool's name, in green: a right-click on a
+			// rack under the red cross is for the job that fixes it (it was
+			// second, after the terrain's "Pour a concrete floor", as
+			// "Password Reset server rack (locked out)")
 			if (imi.hasActions ()) {
 				ActionManagerItem ami;
+				boolean bFix = DataCenter.needsFix (item);
+				int iInsert = 0;
+				if (bFix && sm.getItems () == null) {
+					sm.setItems (new ArrayList<SmartMenu> ());
+				}
 				for (int i = 0; i < imi.getActions ().size (); i++) {
 					ami = ActionManager.getItem (imi.getActions ().get (i));
-					sm.addItem (new SmartMenu (SmartMenu.TYPE_ITEM, ami.getName () + " " + imi.getName ().toLowerCase (), null, CommandPanel.COMMAND_CUSTOM_ACTION_DIRECT_ITEM, ami.getId (), Integer.toString (item.getID ()))); //$NON-NLS-1$
+					if (bFix) {
+						sm.getItems ().add (iInsert++, new SmartMenu (SmartMenu.TYPE_ITEM, ami.getName (), null, CommandPanel.COMMAND_CUSTOM_ACTION_DIRECT_ITEM, ami.getId (), Integer.toString (item.getID ()), null, Color.GREEN));
+					} else {
+						sm.addItem (new SmartMenu (SmartMenu.TYPE_ITEM, ami.getName () + " " + imi.getName ().toLowerCase (), null, CommandPanel.COMMAND_CUSTOM_ACTION_DIRECT_ITEM, ami.getId (), Integer.toString (item.getID ()))); //$NON-NLS-1$
+					}
 				}
-				sm.addItem (new SmartMenu (SmartMenu.TYPE_TEXT, null, null, null, null));
+				if (bFix) {
+					sm.getItems ().add (iInsert, new SmartMenu (SmartMenu.TYPE_TEXT, null, null, null, null));
+				} else {
+					sm.addItem (new SmartMenu (SmartMenu.TYPE_TEXT, null, null, null, null));
+				}
 			}
 
 			// Build like this one
@@ -1933,7 +2039,9 @@ public class Item extends Entity implements Externalizable {
 		}
 
 		// Spawn
-		if (getSpawnTurns () != -1) {
+		// Data center machines (the vending and coffee machines) make nothing
+		// without power; DataCenter sets them not operative then
+		if (getSpawnTurns () != -1 && (!imi.isDataCenter () || isOperative ())) {
 			setSpawnTurns (getSpawnTurns () - 1);
 			if (getSpawnTurns () <= 0) {
 				// Toca spawn
@@ -2075,7 +2183,10 @@ public class Item extends Entity implements Externalizable {
 		if (bItem) {
 			// Creamos el item si en la celda destino no hay otro item
 			ItemManagerItem imi = ItemManager.getItem (sIniHeader);
-			if (Item.isCellAvailableForItem (imi, x, y, z, true, true)) {
+			// Not on a cell with an order on it (2026-11-01: a vending machine's
+			// snack on the cell of an ordered generator got the generator
+			// dropped loose)
+			if (Item.isCellAvailableForItem (imi, x, y, z, true, true) && !cell.isFlagOrders ()) {
 				Item newItem = Item.createItem (imi);
 				newItem.setOperative (true);
 				newItem.setLocked (imi.isLocked ());
@@ -2153,6 +2264,13 @@ public class Item extends Entity implements Externalizable {
 
 
 	public static boolean shouldFall (Cell[][][] cells, ItemManagerItem imi, Point3DShort p3dItem) {
+		// A roof never falls: the hall's walls hold it, as a real roof's
+		// beams do, and Towns' rule (a floor touching another) dropped a
+		// piece built before its neighbors into the hall
+		if (imi.isDcRoof ()) {
+			return false;
+		}
+
 		// Fall
 		Cell cell = cells[p3dItem.x][p3dItem.y][p3dItem.z];
 		if (cell.isDigged ()) {

@@ -30,7 +30,7 @@ import xaos.utils.Point3D;
  * exact behavior against future drift.
  *
  * The target is the ground cell just east of and below the spawn column
- * (citizens spawn stacked at 67,181,11 for seed 42 / normal); mining it digs a
+ * (citizens spawn stacked at 68,160,11 for seed 42 / normal); mining it digs a
  * hole a citizen reaches almost immediately. One game per JVM, like every
  * game-booting test (build.gradle forkEvery = 1).
  */
@@ -42,9 +42,11 @@ class ScenarioMineTest {
     private static final long CHECKPOINT = 250;
 
     // A solid ground cell adjacent to the spawn column, chosen from a probe run
-    // (see git history) as reliably minable and reachable for this seed/map.
-    private static final int TX = 68;
-    private static final int TY = 181;
+    // as reliably minable and reachable for this seed/map.  Picked again on
+    // 2026-10-30 for Parted Magic Server Room, whose sites generate
+    // differently (the spawn column moved from 67,181 to 68,160).
+    private static final int TX = 69;
+    private static final int TY = 160;
     private static final int TZ = 12;
 
     private static Path userFolder;

@@ -8,11 +8,14 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallback;
 import org.lwjgl.glfw.GLFWImage;
+import org.lwjgl.glfw.GLFWNativeWin32;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.glfw.GLFWWindowSizeCallback;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.Platform;
+import org.lwjgl.system.windows.User32;
 
 import xaos.compat.LWJGLException;
 import xaos.compat.input.Keyboard;
@@ -40,6 +43,10 @@ import xaos.compat.input.Mouse;
  * Main-thread only, like the rest of the game.
  */
 public final class Display {
+
+    // WM_GETICON's wParam (winuser.h); LWJGL's User32 has no constants for it.
+    private static final long ICON_SMALL = 0L;
+    private static final long ICON_BIG = 1L;
 
     private static boolean glfwInitialized;
     private static boolean created;
@@ -213,6 +220,38 @@ public final class Display {
                 images.get(i).set(dim, dim, rgba);
             }
             GLFW.glfwSetWindowIcon(window, images);
+        }
+        if (Platform.get() == Platform.WINDOWS) {
+            applyClassIcon();
+        }
+    }
+
+    /**
+     * Windows: makes the window's icons its class's icons as well. The
+     * taskbar asks a new window for its icon as it first shows, when the
+     * game thread is still loading and not answering; it then takes the
+     * class icon, GLFW's generic one, and keeps it (a later WM_SETICON does
+     * not change the button). Seen on Windows 11, 2026-11-01: the launcher's
+     * button had the game's icon, the game window's the generic one, and a
+     * hide and show while the game sat idle at the menu brought the right
+     * one.
+     *
+     * The handles stay GLFW's: it frees them with the window, and destroy()
+     * unregisters the class (glfwTerminate) right after.
+     */
+    private static void applyClassIcon() {
+        long hwnd = GLFWNativeWin32.glfwGetWin32Window(window);
+        // On the window's own thread WM_GETICON runs the window procedure
+        // directly. LWJGL returns SendMessage's result as an int: icon
+        // handles are 32-bit values, sign-extended on 64-bit Windows, as the
+        // widening to long does.
+        long big = User32.nSendMessage(MemoryUtil.NULL, hwnd, User32.WM_GETICON, ICON_BIG, 0L);
+        long small = User32.nSendMessage(MemoryUtil.NULL, hwnd, User32.WM_GETICON, ICON_SMALL, 0L);
+        if (big != 0L) {
+            User32.SetClassLongPtr(null, hwnd, User32.GCL_HICON, big);
+        }
+        if (small != 0L) {
+            User32.SetClassLongPtr(null, hwnd, User32.GCL_HICONSM, small);
         }
     }
 
