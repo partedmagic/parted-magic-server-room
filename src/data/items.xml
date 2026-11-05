@@ -800,6 +800,7 @@
 		<dcDown>5</dcDown>
 		<value>300</value>
 		<action>qrepairrack</action>
+		<canBeUnlocked>false</canBeUnlocked>
 	</dcrackwrecked>
 
 	<!-- A customer moved out (the rework, xaos.datacenter.MoveOuts): the
@@ -812,6 +813,7 @@
 		<alwaysOperative>true</alwaysOperative>
 		<value>300</value>
 		<action>qeraserack</action>
+		<canBeUnlocked>false</canBeUnlocked>
 	</dcrackvacated>
 
 	<!-- Rain damage (the stakes rework, xaos.datacenter.Weather): a rack
@@ -829,6 +831,7 @@
 		<dcDown>5</dcDown>
 		<value>300</value>
 		<action>qrepairrack</action>
+		<canBeUnlocked>false</canBeUnlocked>
 	</dcrackshorted>
 
 	<dcswitchshorted>
@@ -886,6 +889,7 @@
 		<value>200</value>
 	</dcguardpost>
 
+	<!-- No rack offers Unlock (Patrick unlocked three, 2026-11-04): an unlocked rack stops running and loses its customer, with nothing to say so at the click -->
 	<dcrack>
 		<name>Server rack</name>
 		<description>Its customer pays for the hours it runs.</description>
@@ -903,6 +907,7 @@
 		<dcEventPCT>5</dcEventPCT>
 		<value>300</value>
 		<action>qgradeok</action>
+		<canBeUnlocked>false</canBeUnlocked>
 	</dcrack>
 
 	<dccooler>
@@ -1250,6 +1255,7 @@
 		<maxAgeItem>dcrackdead</maxAgeItem>
 		<value>300</value>
 		<action>qgradeworn</action>
+		<canBeUnlocked>false</canBeUnlocked>
 	</dcrackworn>
 
 	<dcrackflagged>
@@ -1266,6 +1272,7 @@
 		<maxAgeItem>dcrackdead</maxAgeItem>
 		<value>300</value>
 		<action>qclone</action>
+		<canBeUnlocked>false</canBeUnlocked>
 	</dcrackflagged>
 
 	<dcrackdead>
@@ -1277,6 +1284,7 @@
 		<dcDown>1</dcDown>
 		<value>200</value>
 		<action>qrescue</action>
+		<canBeUnlocked>false</canBeUnlocked>
 	</dcrackdead>
 
 	<dcerasestation>
@@ -1327,6 +1335,7 @@
 		<dcDown>2</dcDown>
 		<value>250</value>
 		<action>qbootrepair</action>
+		<canBeUnlocked>false</canBeUnlocked>
 	</dcrackboot>
 
 	<dcrackvirus>
@@ -1338,6 +1347,7 @@
 		<dcDown>3</dcDown>
 		<value>250</value>
 		<action>qvirusscan</action>
+		<canBeUnlocked>false</canBeUnlocked>
 	</dcrackvirus>
 
 	<dcracklocked>
@@ -1349,6 +1359,7 @@
 		<dcDown>4</dcDown>
 		<value>250</value>
 		<action>qpwreset</action>
+		<canBeUnlocked>false</canBeUnlocked>
 	</dcracklocked>
 
 	<!-- Coffee and rest (docs/content.md C2): the only food is snacks and

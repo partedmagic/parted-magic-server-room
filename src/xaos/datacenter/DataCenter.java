@@ -2156,6 +2156,15 @@ public final class DataCenter {
      *         cooling, switches, machines, guard posts, cameras, water gear),
      *         which does nothing until it is installed (locked in its cell)
      */
+    /**
+     * @return whether a click on any part of the item's picture means the
+     *         item (MainPanel.getGearUnderMouse): gear, and a rack waiting to
+     *         be wiped, which earns nothing and so is not gear to the hall
+     */
+    public static boolean isPickedByPicture(ItemManagerItem imi) {
+        return isGear(imi) || MoveOuts.VACATED_RACK.equals(imi.getIniHeader());
+    }
+
     static boolean isGear(ItemManagerItem imi) {
         return imi.isDataCenter() || imi.getDcSecurity() > 0 || imi.getDcWater() > 0 || imi.getDcNet() > 0;
     }

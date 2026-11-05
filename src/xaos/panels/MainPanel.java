@@ -3,9 +3,11 @@ package xaos.panels;
 import java.awt.Point;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import xaos.compat.input.Mouse;
 import org.lwjgl.opengl.GL11;
+import xaos.Towns;
 import xaos.TownsProperties;
 
 import xaos.campaign.TutorialFlow;
@@ -28,6 +30,7 @@ import xaos.main.Game;
 import xaos.main.World;
 import xaos.panels.menus.ContextMenu;
 import xaos.panels.menus.SmartMenu;
+import xaos.property.PropertyFile;
 import xaos.stockpiles.Stockpile;
 import xaos.tasks.Task;
 import xaos.tiles.Cell;
@@ -120,6 +123,12 @@ public final class MainPanel {
 	// While placing: why the cell under the mouse is red, or null; renderTask
 	// works it out and the tooltip shows it
 	private static String placeReason;
+
+	// The cells whose sprite can lie over the mouse's cell, nearest the viewer
+	// first, as x and y from it: the row in front, then the two half a row in
+	// front, then the cell itself
+	private static final int[][] CELLS_IN_FRONT = { { -1, 1 }, { -1, 0 }, { 0, 1 }, { 0, 0 } };
+	private static final HashMap<String, boolean[][]> hmSpriteAlpha = new HashMap<String, boolean[][]> ();
 
 
 	public MainPanel () {
@@ -2548,7 +2557,117 @@ public final class MainPanel {
 			}
 		}
 
+		if (pointTileMouse != null && isPickingGear ()) {
+			Point3D p3dGear = getGearUnderMouse (x, y, xView - maxTilesX, yView - maxTilesY, zView, pointTileMouse.z);
+			if (p3dGear != null) {
+				return p3dGear;
+			}
+		}
+
 		return pointTileMouse;
+	}
+
+
+	/**
+	 * @return true when a click means what it lands on: the tooltip, the
+	 *         right-click menu, a tool like Erase or Repair, Cancel orders.  While
+	 *         building, the cell behind a rack can still be picked through the
+	 *         rack's top half, to put something there.
+	 */
+	private static boolean isPickingGear () {
+		if (Game.getCurrentState () != Game.STATE_CREATING_TASK || Game.getCurrentTask () == null) {
+			return true;
+		}
+		int iTask = Game.getCurrentTask ().getTask ();
+		return iTask == Task.TASK_CUSTOM_ACTION || iTask == Task.TASK_CANCEL_ORDER;
+	}
+
+
+	/**
+	 * Gear stands a tile taller than its cell, so the top half of a rack lies
+	 * over the cells behind it, and the map took a click there for the ground
+	 * back there (Patrick, 2026-11-04, of a rack whose menu only offered Erase
+	 * on its bottom half: "there is nothing erase").  Now a pixel of gear is that
+	 * gear.  The cells are tried nearest the viewer first, on each level along
+	 * the line of sight down to the cell the mouse already found.  Anything else
+	 * in front of the gear, such as a wall, keeps the click as it was.
+	 * 
+	 * @param x The mouse, as getTileMouse has it
+	 * @param y The mouse, as getTileMouse has it
+	 * @param xOrigin The map's x at the panel's corner
+	 * @param yOrigin The map's y at the panel's corner
+	 * @param zView The level on view
+	 * @param zLast The level of the cell the mouse found
+	 * @return the gear's cell, null when the mouse is on no gear
+	 */
+	private static Point3D getGearUnderMouse (int x, int y, int xOrigin, int yOrigin, int zView, int zLast) {
+		double dX = (x / 2.0 - y) / Tile.TERRAIN_ICON_HEIGHT + xOrigin;
+		double dY = (x / 2.0 + y) / Tile.TERRAIN_ICON_HEIGHT + yOrigin;
+
+		for (int iZ = zView; iZ <= zLast && iZ < World.MAP_DEPTH; iZ++) {
+			// A level down, the same pixel is one cell along the line of sight
+			double dLevelX = dX + (iZ - zView);
+			double dLevelY = dY - (iZ - zView);
+
+			for (int i = 0; i < CELLS_IN_FRONT.length; i++) {
+				int iX = (int) Math.floor (dLevelX) + CELLS_IN_FRONT[i][0];
+				int iY = (int) Math.floor (dLevelY) + CELLS_IN_FRONT[i][1];
+				if (iZ < 0 || iX < 0 || iY < 0 || iX >= World.MAP_WIDTH || iY >= World.MAP_HEIGHT) {
+					continue;
+				}
+
+				Cell cell = World.getCell (iX, iY, iZ);
+				Item item = cell.getItem ();
+				if (item == null || !cell.isDiscovered ()) {
+					continue;
+				}
+				ItemManagerItem imi = ItemManager.getItem (item.getIniHeader ());
+				if (imi == null) {
+					continue;
+				}
+				// Drawn flat near the mouse (renderItems), so not in the way
+				boolean bGear = DataCenter.isPickedByPicture (imi);
+				if (!bGear && (flatMouseON || bMiniBlocksON) && ItemManager.getMiniItem (item.getIniHeader ()) != null) {
+					continue;
+				}
+
+				// The pixel in the sprite: its ground center lies half a tile
+				// above its bottom edge
+				int iSpriteX = (item.getTileWidth () / 2) + (int) Math.floor ((dLevelX - iX + dLevelY - iY - 1) * (Tile.TERRAIN_ICON_WIDTH / 2));
+				int iSpriteY = item.getTileHeight () - (Tile.TERRAIN_ICON_HEIGHT / 2) + (int) Math.floor ((dLevelY - iY - dLevelX + iX) * (Tile.TERRAIN_ICON_HEIGHT / 2));
+				if (isSpritePixelVisible (item, iSpriteX, iSpriteY)) {
+					return bGear ? new Point3D (iX, iY, iZ) : null;
+				}
+			}
+		}
+
+		return null;
+	}
+
+
+	/**
+	 * @return whether an item's picture shows at that pixel, counted from the
+	 *         sprite's top left, as it is drawn
+	 */
+	private static boolean isSpritePixelVisible (Item item, int x, int y) {
+		if (x < 0 || y < 0 || x >= item.getTileWidth () || y >= item.getTileHeight ()) {
+			return false;
+		}
+		if (Towns.getPropertiesString (PropertyFile.PROPERTY_FILE_GRAPHICS, "[" + item.getIniHeader () + "]TEXTURE_FILE") == null) { //$NON-NLS-1$ //$NON-NLS-2$
+			return false;
+		}
+		String sKey = item.getTextureID () + "," + item.getTileSetX () + "," + item.getTileSetY (); //$NON-NLS-1$ //$NON-NLS-2$
+		boolean[][] alpha = hmSpriteAlpha.get (sKey);
+		if (alpha == null) {
+			alpha = UtilsGL.generateAlpha (item);
+			if (alpha == null) {
+				return false;
+			}
+			hmSpriteAlpha.put (sKey, alpha);
+		}
+		// generateAlpha marks the clear pixels
+		boolean bMirrored = !item.isFacingWest () && !item.isFacingEast ();
+		return !alpha[bMirrored ? item.getTileWidth () - 1 - x : x][y];
 	}
 
 
