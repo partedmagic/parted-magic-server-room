@@ -3,6 +3,7 @@ package xaos.utils;
 import java.util.ArrayList;
 
 import xaos.main.World;
+import xaos.tiles.entities.living.Citizen;
 import xaos.tiles.entities.living.LivingEntity;
 
 public final class AStarQueue implements Runnable {
@@ -124,6 +125,9 @@ public final class AStarQueue implements Runnable {
                         // Le ponemos el camino a la living y la marcamos para que no espere más
                         le.setPath(path);
                         le.setWaitingForPath(false);
+                        if (le instanceof Citizen) {
+                            ((Citizen) le).notePathResult(path != null);
+                        }
 
 						// Si el path es null es que no ha encontrado camino, en ese caso levantamos el flag de "recheckASZID" en World para que haga un rechequeo
                         //World.setRecheckASZID (true);

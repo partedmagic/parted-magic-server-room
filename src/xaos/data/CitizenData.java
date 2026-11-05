@@ -7,11 +7,11 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 
 import xaos.actions.ActionPriorityManager;
+import xaos.datacenter.Crew;
 import xaos.main.Game;
 import xaos.tiles.entities.living.LivingEntity;
 import xaos.tiles.entities.living.LivingEntityManagerItem;
 import xaos.utils.Messages;
-import xaos.utils.Names;
 import xaos.utils.Utils;
 import xaos.utils.UtilsIniHeaders;
 
@@ -64,27 +64,8 @@ public class CitizenData implements Externalizable {
     }
 
     public CitizenData(LivingEntityManagerItem lemi) {
-        StringBuffer sFullName = new StringBuffer();
-        if (lemi.getNamePoolTag() != null) {
-            sFullName.append(Names.getName(lemi.getNamePoolTag(), Game.getWorld().getCampaignID(), Game.getWorld().getMissionID()));
-
-            if (lemi.getSurnamePoolTag() != null) {
-                sFullName.append(" "); //$NON-NLS-1$
-
-                // El nick sólo aparece 1 de cada 100
-                if (Utils.getRandomBetween(1, 100) == 1) {
-                    sFullName.append("'"); //$NON-NLS-1$
-                    sFullName.append(Names.getName("nick", Game.getWorld().getCampaignID(), Game.getWorld().getMissionID())); //$NON-NLS-1$
-                    sFullName.append("' "); //$NON-NLS-1$
-                }
-
-                sFullName.append(Names.getName(lemi.getSurnamePoolTag(), Game.getWorld().getCampaignID(), Game.getWorld().getMissionID()));
-            }
-
-            setFullName(sFullName.toString());
-        } else {
-            setFullName(lemi.getName());
-        }
+        String sName = lemi.getNamePoolTag() != null ? Crew.pickName(lemi.getNamePoolTag()) : null;
+        setFullName(sName != null ? sName : lemi.getName());
 
         if (lemi.getType() == LivingEntity.TYPE_HERO) {
             setFullName(getFullName() + Messages.getString("CitizenData.3")); //$NON-NLS-1$

@@ -116,8 +116,9 @@ public class ItemManagerItem {
     // cooling (DataCenter.WATER_*) and in security (DataCenter.SECURITY_*),
     // and an item whose first job the technicians do on their own (1, a
     // ripe tomato planter: Garden), and a roof (1: it never falls, and it
-    // keeps the rain off what is under it, Weather)
-    public static final String[] DC_TAGS = {"dcPower", "dcHeat", "dcCooling", "dcPorts", "dcIncome", "dcDown", "dcFlagged", "dcEventPCT", "dcSource", "dcWater", "dcSecurity", "dcPick", "dcRoof"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$ //$NON-NLS-12$ //$NON-NLS-13$
+    // keeps the rain off what is under it, Weather), and the fiber lines and
+    // the DNS server (Network.NET_*)
+    public static final String[] DC_TAGS = {"dcPower", "dcHeat", "dcCooling", "dcPorts", "dcIncome", "dcDown", "dcFlagged", "dcEventPCT", "dcSource", "dcWater", "dcSecurity", "dcPick", "dcRoof", "dcNet"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$ //$NON-NLS-12$ //$NON-NLS-13$
     private int dcPower;
     private int dcHeat;
     private int dcCooling;
@@ -130,6 +131,7 @@ public class ItemManagerItem {
     private int dcWater;
     private int dcSecurity;
     private int dcPick;
+    private int dcNet;
     private int dcRoof;
 
     // Pictures one thing can show, graphics.ini names (items.xml dcLooks, a
@@ -631,6 +633,8 @@ public class ItemManagerItem {
             dcPick = iValue;
         } else if ("dcRoof".equals(sTag)) { //$NON-NLS-1$
             dcRoof = iValue;
+        } else if ("dcNet".equals(sTag)) { //$NON-NLS-1$
+            dcNet = iValue;
         }
     }
 
@@ -656,6 +660,10 @@ public class ItemManagerItem {
 
     public int getDcWater() {
         return dcWater;
+    }
+
+    public int getDcNet() {
+        return dcNet;
     }
 
     public int getDcSecurity() {

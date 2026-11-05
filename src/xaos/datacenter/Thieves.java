@@ -59,7 +59,6 @@ public final class Thieves {
     private static final int GUARD_RANGE = 3;
     private static final int CAMERA_RANGE = 8;
     private static final String[] TYPES = {"dcthief1", "dcthief2", "dcthief3"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-    private static final String GUARD = Crew.GUARD_TYPE;
     private static final String CAMERA = "dccamera"; //$NON-NLS-1$
 
     // What a thief breaks through, and the hours it takes: the build menu's
@@ -182,7 +181,8 @@ public final class Thieves {
             if (imi == null || !DataCenter.isInstalled(item) || imi.getDcSource() == 1) {
                 continue;
             }
-            if (imi.getDcPower() != 0 || imi.getDcCooling() > 0 || imi.getDcPorts() > 0 || imi.getDcIncome() > 0 || imi.getDcSource() > 0) {
+            if (imi.getDcPower() != 0 || imi.getDcCooling() > 0 || imi.getDcPorts() > 0 || imi.getDcIncome() > 0 || imi.getDcSource() > 0
+                    || (Buyout.isSold() && MoveOuts.VACATED_RACK.equals(item.getIniHeader()))) {
                 al.add(item);
             }
         }
@@ -563,7 +563,7 @@ public final class Thieves {
      */
     private static boolean nearGuard(LivingEntity le) {
         for (LivingEntity guard : World.getLivings(true).values()) {
-            if (GUARD.equals(guard.getIniHeader()) && Protests.isOnDuty(guard) && Math.abs(guard.getZ() - le.getZ()) <= 1 && Math.abs(guard.getX() - le.getX()) <= GUARD_RANGE && Math.abs(guard.getY() - le.getY()) <= GUARD_RANGE) {
+            if (Crew.isGuard(guard) && Protests.isOnDuty(guard) && Math.abs(guard.getZ() - le.getZ()) <= 1 && Math.abs(guard.getX() - le.getX()) <= GUARD_RANGE && Math.abs(guard.getY() - le.getY()) <= GUARD_RANGE) {
                 return true;
             }
         }

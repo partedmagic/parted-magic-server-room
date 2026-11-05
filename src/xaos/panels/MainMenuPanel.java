@@ -5,6 +5,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import xaos.datacenter.BuyoutList;
+import xaos.datacenter.Leaderboard;
 import xaos.compat.input.Keyboard;
 import xaos.compat.input.Mouse;
 import xaos.compat.opengl.Display;
@@ -31,6 +33,9 @@ import xaos.utils.UtilsGL;
 import xaos.utils.UtilsKeyboard;
 
 public final class MainMenuPanel implements Runnable {
+
+    private static final int BEST_BUYOUTS_SHOWN = 10;
+
 
     public static int TEXTURE_MAIN_MENU_ID;
     public static int TEXTURE_SMP_LOGO_ID;
@@ -654,6 +659,33 @@ public final class MainMenuPanel implements Runnable {
 
         // Blank
         mainMenu.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
+
+        // The player's best buyouts, once there is one (Buyout)
+        ArrayList<String> alBest = BuyoutList.getMenuLines(BEST_BUYOUTS_SHOWN);
+        if (!alBest.isEmpty()) {
+            SmartMenu smBest = new SmartMenu(SmartMenu.TYPE_MENU, Messages.getString("MainMenuPanel.bestTitle"), mainMenu, null, null, null, null, textColor); //$NON-NLS-1$
+            smBest.setTrasparency(mainMenu.isTrasparency());
+            smBest.setBorderColor(borderColor);
+            smBest.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, Messages.getString("MainMenuPanel.bestTitle"), null, null, null, null)); //$NON-NLS-1$
+            smBest.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null, null));
+            for (String sLine : alBest) {
+                menuAux = new SmartMenu(SmartMenu.TYPE_TEXT, sLine, null, null, null, null, null, textColor);
+                menuAux.setDynamic(true);
+                menuAux.setBorderColor(borderColor);
+                smBest.addItem(menuAux);
+            }
+            smBest.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
+            if (Leaderboard.hasPage()) {
+                menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.bestWorld"), null, CommandPanel.COMMAND_LEADERBOARD_SEE, null, null, null, textColor); //$NON-NLS-1$
+                menuAux.setBorderColor(borderColor);
+                smBest.addItem(menuAux);
+            }
+            menuAux = new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("MainMenuPanel.7"), null, CommandPanel.COMMAND_BACK, null, null, null, textColor); //$NON-NLS-1$
+            menuAux.setBorderColor(borderColor);
+            smBest.addItem(menuAux);
+            mainMenu.addItem(smBest);
+            mainMenu.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, null, null, null, null));
+        }
 
         // Credits
         SmartMenu smCredits = new SmartMenu(SmartMenu.TYPE_MENU, Messages.getString("MainMenuPanel.34"), mainMenu, null, null, null, null, textColor); //$NON-NLS-1$

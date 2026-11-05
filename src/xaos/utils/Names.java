@@ -66,6 +66,12 @@ public final class Names {
         return null;
     }
 
+    public static ArrayList<String> getNames(String sPool, String sCampaignID, String sMissionID) {
+        loadNames(sCampaignID, sMissionID);
+
+        return namesHash.get(sPool);
+    }
+
     public static void clear() {
         namesHash = null;
     }

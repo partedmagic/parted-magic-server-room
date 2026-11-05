@@ -7,6 +7,7 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import xaos.datacenter.Weather;
 import xaos.campaign.TutorialTrigger;
 import xaos.caravans.PricesManager;
 import xaos.data.BuryData;
@@ -1055,7 +1056,8 @@ public class Cell implements Externalizable {
 			}
 		}
 		// Las de arriba
-		if (z > 0 && cells[x][y][z - 1].isMined ()) {
+		// (the path search's rule: never up through a roof, Weather.isRoofAt)
+		if (z > 0 && cells[x][y][z - 1].isMined () && !Weather.isRoofAt (x, y, z - 1)) {
 			// Las 3 del norte
 			if (y > 0) {
 				if (x > 0) {
@@ -1178,19 +1180,19 @@ public class Cell implements Externalizable {
 				if (y > 0) {
 					if (x > 0) {
 						iTmp = cells[x - 1][y - 1][z + 1].getAstarZoneID ();
-						if (iTmp != -1 && cells[x - 1][y - 1][z].isMined () && !neighborIDContainsID (iTmp)) {
+						if (iTmp != -1 && cells[x - 1][y - 1][z].isMined () && !Weather.isRoofAt (x - 1, y - 1, z) && !neighborIDContainsID (iTmp)) {
 							neighborIDs[neighborIDsIndex] = iTmp;
 							neighborIDsIndex++;
 						}
 					}
 					iTmp = cells[x][y - 1][z + 1].getAstarZoneID ();
-					if (iTmp != -1 && cells[x][y - 1][z].isMined () && !neighborIDContainsID (iTmp)) {
+					if (iTmp != -1 && cells[x][y - 1][z].isMined () && !Weather.isRoofAt (x, y - 1, z) && !neighborIDContainsID (iTmp)) {
 						neighborIDs[neighborIDsIndex] = iTmp;
 						neighborIDsIndex++;
 					}
 					if (x < (World.MAP_WIDTH - 1)) {
 						iTmp = cells[x + 1][y - 1][z + 1].getAstarZoneID ();
-						if (iTmp != -1 && cells[x + 1][y - 1][z].isMined () && !neighborIDContainsID (iTmp)) {
+						if (iTmp != -1 && cells[x + 1][y - 1][z].isMined () && !Weather.isRoofAt (x + 1, y - 1, z) && !neighborIDContainsID (iTmp)) {
 							neighborIDs[neighborIDsIndex] = iTmp;
 							neighborIDsIndex++;
 						}
@@ -1200,7 +1202,7 @@ public class Cell implements Externalizable {
 				// Este
 				if (x < (World.MAP_WIDTH - 1)) {
 					iTmp = cells[x + 1][y][z + 1].getAstarZoneID ();
-					if (iTmp != -1 && cells[x + 1][y][z].isMined () && !neighborIDContainsID (iTmp)) {
+					if (iTmp != -1 && cells[x + 1][y][z].isMined () && !Weather.isRoofAt (x + 1, y, z) && !neighborIDContainsID (iTmp)) {
 						neighborIDs[neighborIDsIndex] = iTmp;
 						neighborIDsIndex++;
 					}
@@ -1210,19 +1212,19 @@ public class Cell implements Externalizable {
 				if (y < (World.MAP_HEIGHT - 1)) {
 					if (x > 0) {
 						iTmp = cells[x - 1][y + 1][z + 1].getAstarZoneID ();
-						if (iTmp != -1 && cells[x - 1][y + 1][z].isMined () && !neighborIDContainsID (iTmp)) {
+						if (iTmp != -1 && cells[x - 1][y + 1][z].isMined () && !Weather.isRoofAt (x - 1, y + 1, z) && !neighborIDContainsID (iTmp)) {
 							neighborIDs[neighborIDsIndex] = iTmp;
 							neighborIDsIndex++;
 						}
 					}
 					iTmp = cells[x][y + 1][z + 1].getAstarZoneID ();
-					if (iTmp != -1 && cells[x][y + 1][z].isMined () && !neighborIDContainsID (iTmp)) {
+					if (iTmp != -1 && cells[x][y + 1][z].isMined () && !Weather.isRoofAt (x, y + 1, z) && !neighborIDContainsID (iTmp)) {
 						neighborIDs[neighborIDsIndex] = iTmp;
 						neighborIDsIndex++;
 					}
 					if (x < (World.MAP_WIDTH - 1)) {
 						iTmp = cells[x + 1][y + 1][z + 1].getAstarZoneID ();
-						if (iTmp != -1 && cells[x + 1][y + 1][z].isMined () && !neighborIDContainsID (iTmp)) {
+						if (iTmp != -1 && cells[x + 1][y + 1][z].isMined () && !Weather.isRoofAt (x + 1, y + 1, z) && !neighborIDContainsID (iTmp)) {
 							neighborIDs[neighborIDsIndex] = iTmp;
 							neighborIDsIndex++;
 						}
@@ -1232,7 +1234,7 @@ public class Cell implements Externalizable {
 				// Oeste
 				if (x > 0) {
 					iTmp = cells[x - 1][y][z + 1].getAstarZoneID ();
-					if (iTmp != -1 && cells[x - 1][y][z].isMined () && !neighborIDContainsID (iTmp)) {
+					if (iTmp != -1 && cells[x - 1][y][z].isMined () && !Weather.isRoofAt (x - 1, y, z) && !neighborIDContainsID (iTmp)) {
 						neighborIDs[neighborIDsIndex] = iTmp;
 						neighborIDsIndex++;
 					}

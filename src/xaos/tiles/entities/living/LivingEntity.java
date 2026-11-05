@@ -224,6 +224,9 @@ public abstract class LivingEntity extends Entity implements Externalizable {
 		LivingEntityManagerItem lemi = LivingEntityManager.getItem (sIniHeader);
 
 		if (lemi.getAltGraphics () != null && lemi.getAltGraphics ().size () > 0) {
+			if (lemi.getType () == TYPE_CITIZEN) {
+				return Crew.pickLook (sIniHeader, lemi.getAltGraphics ());
+			}
 			int iRandom = Utils.getRandomBetween (0, lemi.getAltGraphics ().size ());
 			// Si el random == altGraphics.size() usamos el gráfico original (por lo tanto no hacemos nada)
 			if (iRandom < lemi.getAltGraphics ().size ()) {

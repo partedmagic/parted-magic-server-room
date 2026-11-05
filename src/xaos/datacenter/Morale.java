@@ -138,6 +138,21 @@ public final class Morale {
     }
 
     /**
+     * @return who has run out of food and not found any.  They stop working
+     *         until they eat, which nothing else on the screen says
+     */
+    static int getHungry() {
+        int n = 0;
+        for (Integer iID : World.getCitizenIDs()) {
+            LivingEntity le = World.getLivingEntityByID(iID.intValue());
+            if (le instanceof Citizen && ((Citizen) le).getCitizenData().getHungry() == 0) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /**
      * @return the technicians warned at a dawn who are still here and may
      *         quit at the next one (one of them will, if still miserable)
      */

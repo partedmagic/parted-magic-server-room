@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import xaos.TownsProperties;
 
 import xaos.datacenter.Crew;
+import xaos.datacenter.Network;
 import xaos.actions.Action;
 import xaos.actions.ActionManager;
 import xaos.actions.ActionManagerItem;
@@ -63,6 +64,10 @@ import xaos.zones.ZoneManager;
 import xaos.zones.ZoneManagerItem;
 
 public class Citizen extends LivingEntity implements Externalizable {
+
+    private static final int NO_PATH_LIMIT = 5;
+    private transient int noPathCount;
+
 
     // Happiness a night on the floor costs (a cot gives 5 and its own)
     private static final int FLOOR_SLEEP_HAPPINESS = 3;
@@ -383,6 +388,9 @@ public class Citizen extends LivingEntity implements Externalizable {
             // Minamos
             if (!cell.isMined()) {
                 cell.getTerrain().mine(hotPoint3D.x, hotPoint3D.y, hotPoint3D.z, task.getTask() == Task.TASK_MINE_LADDER);
+                if (cell.isMined()) {
+                    Network.dugOut(this, hotPoint3D.x, hotPoint3D.y, hotPoint3D.z);
+                }
             }
 
             bReturn = cell.isMined();
@@ -2729,6 +2737,11 @@ public class Citizen extends LivingEntity implements Externalizable {
                                 getCurrentCustomAction().getQueue().remove(0);
                             }
                         } else {
+                            // A wall, a river or a roof has cut the spot off since the
+                            // order: setDestination takes him off the job and he drops it
+                            if (World.getCell(destPoint).getAstarZoneID() != World.getCell(getCoordinates()).getAstarZoneID()) {
+                                MessagesPanel.addMessage(MessagesPanel.TYPE_SYSTEM, java.text.MessageFormat.format(Messages.getString("Citizen.cannotReach"), ItemManager.getItem(qi.getValue()).getName()), ColorGL.ORANGE, new Point3DShort(destPoint.x, destPoint.y, destPoint.z)); //$NON-NLS-1$
+                            }
                             setDestination(destPoint);
                         }
                     }
@@ -3451,6 +3464,23 @@ public class Citizen extends LivingEntity implements Externalizable {
         } else {
             // Algo ha pasado con los places, sacamos al aldeano de la tarea y ya veremos
             Game.getWorld().getTaskManager().removeCitizen(this);
+        }
+    }
+
+    /**
+     * A path search came back.  One that finds no way, again and again, leaves
+     * the job (2026-11-04: a technician carrying a switch stood still for days
+     * on an order that a roof and a river had cut off, and he never did
+     * anything else).  What he carries drops at his feet.
+     */
+    public void notePathResult(boolean bFound) {
+        if (bFound) {
+            noPathCount = 0;
+        } else if (++noPathCount >= NO_PATH_LIMIT) {
+            noPathCount = 0;
+            if (getCurrentTask() != null) {
+                Game.getWorld().getTaskManager().removeCitizen(this);
+            }
         }
     }
 

@@ -5,6 +5,7 @@ import java.awt.Point;
 import xaos.compat.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
+import xaos.datacenter.Leaderboard;
 import xaos.main.Game;
 import xaos.tiles.Tile;
 import xaos.utils.ColorGL;
@@ -24,6 +25,7 @@ public class TypingPanel {
     public static final int TYPE_RENAME_JOB_GROUP = 4;
     public static final int TYPE_ADD_SERVER = 5;
     public static final int TYPE_ADD_TEXT_TO_ITEM = 6;
+    public static final int TYPE_COMPANY_NAME = 7;
 
     public static int TYPING_TYPE;
     public static int TYPING_PARAMETER;
@@ -252,7 +254,7 @@ public class TypingPanel {
             return true;
         } else {
             // Teclas normales
-            if (getNewText().length() < MAX_CHARS) {
+            if (getNewText().length() < (TYPING_TYPE == TYPE_COMPANY_NAME ? Leaderboard.NAME_MAX : MAX_CHARS)) {
                 String sChar = getKeyString(key, shift);
                 if (sChar != null) {
                     if (sChar.equals(" ")) { //$NON-NLS-1$

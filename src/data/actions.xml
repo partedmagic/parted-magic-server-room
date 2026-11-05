@@ -286,6 +286,86 @@
 
 	<!-- TV, game console and bar (Leisure), made at the workbench -->
 	<action>
+		<id>qdcpingpong</id>
+		<priorityID>itemconstruction</priorityID>
+		<queue>
+			<lock>dcbench</lock>
+			<pick>dcwood</pick>
+			<move>dcbench</move>
+			<wait>30</wait>
+			<destroyItem />
+			<pick>dcwood</pick>
+			<move>dcbench</move>
+			<wait>30</wait>
+			<destroyItem />
+			<pick>dcwood</pick>
+			<move>dcbench</move>
+			<wait>30</wait>
+			<destroyItem />
+			<unlock />
+			<createItem>dcpingpong</createItem>
+		</queue>
+	</action>
+
+	<action>
+		<id>qdcbeanbag</id>
+		<priorityID>itemconstruction</priorityID>
+		<queue>
+			<lock>dcbench</lock>
+			<pick>dcwood</pick>
+			<move>dcbench</move>
+			<wait>20</wait>
+			<destroyItem />
+			<pick>dcsoil</pick>
+			<move>dcbench</move>
+			<wait>20</wait>
+			<destroyItem />
+			<unlock />
+			<createItem>dcbeanbag</createItem>
+		</queue>
+	</action>
+
+	<action>
+		<id>qdcnappod</id>
+		<priorityID>itemconstruction</priorityID>
+		<queue>
+			<lock>dcbench</lock>
+			<pick>dcwood</pick>
+			<move>dcbench</move>
+			<wait>30</wait>
+			<destroyItem />
+			<pick>dcsteel</pick>
+			<move>dcbench</move>
+			<wait>30</wait>
+			<destroyItem />
+			<pick>dcsteel</pick>
+			<move>dcbench</move>
+			<wait>30</wait>
+			<destroyItem />
+			<unlock />
+			<createItem>dcnappod</createItem>
+		</queue>
+	</action>
+
+	<action>
+		<id>qdckombuchatap</id>
+		<priorityID>itemconstruction</priorityID>
+		<queue>
+			<lock>dcbench</lock>
+			<pick>dcwood</pick>
+			<move>dcbench</move>
+			<wait>30</wait>
+			<destroyItem />
+			<pick>dcsteel</pick>
+			<move>dcbench</move>
+			<wait>30</wait>
+			<destroyItem />
+			<unlock />
+			<createItem>dckombuchatap</createItem>
+		</queue>
+	</action>
+
+	<action>
 		<id>qdctv</id>
 		<priorityID>itemconstruction</priorityID>
 		<queue>
@@ -721,6 +801,54 @@
 	</action>
 
 	<action>
+		<id>qdcfiber2</id>
+		<name>Install second fiber line</name>
+		<generatedItem>dcfiber2</generatedItem>
+
+		<priorityID>datacenter</priorityID>
+
+		<queue>
+			<pick>dcfiber2kit</pick>
+			<wait>25</wait>
+			<destroyItem />
+			<createItem>dcfiber2</createItem>
+		</queue>
+	</action>
+
+	<!-- It is always DNS (Network).  A quick job, once someone thinks of it -->
+	<action>
+		<id>qflushdns</id>
+		<name>Flush DNS</name>
+
+		<priorityID>datacenter</priorityID>
+
+		<queue>
+			<move useSource="true">dcdnsdown</move>
+			<wait>20</wait>
+			<move useSource="true">dcdnsdown</move>
+			<replaceCellItem>dcdns</replaceCellItem>
+		</queue>
+	</action>
+
+	<!-- Pulling the old server (OldServer decides what it was doing): it comes
+	     apart into a box of spare parts -->
+	<action>
+		<id>qpulloldserver</id>
+		<name>Pull</name>
+		<generatedItem>dcparts</generatedItem>
+
+		<priorityID>datacenter</priorityID>
+
+		<queue>
+			<move useSource="true">dcoldserver</move>
+			<wait>60</wait>
+			<move useSource="true">dcoldserver</move>
+			<destroyCellItem />
+			<createItem>dcparts</createItem>
+		</queue>
+	</action>
+
+	<action>
 		<id>qdcguardpost</id>
 		<name>Install guard post</name>
 		<generatedItem>dcguardpost</generatedItem>
@@ -810,12 +938,10 @@
 		<priorityID>datacenter</priorityID>
 
 		<queue>
-			<pick>dcparts</pick>
 			<move useSource="true">dcswitchwrecked</move>
 			<wait>60</wait>
 			<move useSource="true">dcswitchwrecked</move>
 			<replaceCellItem>dcswitch</replaceCellItem>
-			<destroyItem />
 		</queue>
 	</action>
 
@@ -826,12 +952,10 @@
 		<priorityID>datacenter</priorityID>
 
 		<queue>
-			<pick>dcparts</pick>
 			<move useSource="true">dcgridcut</move>
 			<wait>60</wait>
 			<move useSource="true">dcgridcut</move>
 			<replaceCellItem>dcgrid</replaceCellItem>
-			<destroyItem />
 		</queue>
 	</action>
 

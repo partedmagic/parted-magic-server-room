@@ -190,7 +190,7 @@
 				<flow>
 					<title>Customers</title>
 					<text>Your racks have customers, and two more are waiting for the boxed racks. A rack you buy starts empty until a customer signs for it at a dawn. A rack down a full day loses its customer. Here in the basics, customers stay.</text>
-					<text>Reputation runs 0 to 100: up 1 after a day every rack ran, down 5 for each customer lost. The higher it is, the sooner empty racks sign and the less trucks charge.</text>
+					<text>Reputation runs 0 to 100. It goes up after a day your racks earned most of their pay, and down 5 for each customer lost. The higher it is, the sooner empty racks sign and the less trucks charge.</text>
 					<tile>dcsitelead</tile>
 				</flow>
 
@@ -225,8 +225,8 @@
 
 				<flow>
 					<title>Protesters</title>
-					<text>On a site, from day 3, protesters gather near the hall one day in three. Every two hours the news runs it, more join, and some slip in to wreck racks, switches or the grid feed. Big sites draw more.</text>
-					<text>Wrecks cost reputation. Repair fixes a wreck with spare parts. You start with a boxed guard post and two boxes of parts.</text>
+					<text>On a site, from day 3, protesters now and then gather near the hall. Every two hours the news runs it, more join, and some slip in to wreck racks, switches or the grid feed. Big sites draw more, and more often.</text>
+					<text>Wrecks cost reputation. Repair fixes them, and a rack takes a box of spare parts. You start with a boxed guard post and two boxes of parts.</text>
 					<tile>dcsitelead</tile>
 				</flow>
 
@@ -253,7 +253,7 @@
 
 				<flow>
 					<title>Food</title>
-					<text>The vending and coffee machines feed your crew while they have power. Keep the cells around them clear: snacks and coffee go there, and a machine stops when they are full.</text>
+					<text>The vending and coffee machines feed your crew while they have power. Keep the cells around them clear: snacks and coffee go there, and a machine stops when they are full. The two you start with feed about 14 people. Hungry people stop working until they eat, so buy another vending machine as the crew grows.</text>
 					<tile>dcsitelead</tile>
 				</flow>
 
@@ -268,6 +268,13 @@
 					<title>Off shift</title>
 					<text>On a site, from day 15 resting in the break room only counts when it has walls and a roof, and only for someone with something to do off shift.</text>
 					<text>Make a TV or a game console at the workbench for each bunk room. Construction workers can share a donut shop instead (Zones): give it a donut case, walls and a roof. The status line warns from day 12.</text>
+					<tile>dcsitelead</tile>
+				</flow>
+
+				<flow>
+					<title>Perks</title>
+					<text>Your crew expects what the big tech companies give their people. All of it is made at the workbench.</text>
+					<text>A ping pong table in a walled and roofed break room gives 4 people something to do off shift. A beanbag beats a chair and a nap pod beats a cot. A kombucha tap pours kombucha, which fills nobody up and lifts the mood.</text>
 					<tile>dcsitelead</tile>
 				</flow>
 
@@ -403,6 +410,34 @@
 							<param2>1</param2>
 						</trigger>
 					</triggers>
+				</flow>
+
+				<flow>
+					<title>The old server</title>
+					<text>One thing in your starting kit is an old server with a note on it that says DO NOT TURN OFF. Nobody knows what it does. It uses 4 kW and pays nothing.</text>
+					<text>A technician can pull it: right-click it. Maybe nothing happens. On a site, maybe half the racks stop booting.</text>
+					<tile>dcsitelead</tile>
+				</flow>
+
+				<flow>
+					<title>The fiber line</title>
+					<text>Your customers reach the site through the fiber line in your starting kit. On a site, from day 6 a backhoe cuts it now and then, and every rack is down for a few hours until the provider fixes it. Digging near it can hit it too.</text>
+					<text>A second fiber line from the supplier keeps the site online when that happens.</text>
+					<tile>dcsitelead</tile>
+				</flow>
+
+				<flow>
+					<title>It cannot be DNS</title>
+					<text>On a site, from day 6 customers now and then cannot reach any rack, and nothing looks wrong. The racks are fine. The switches are fine. It cannot be DNS.</text>
+					<text>It is DNS. Right-click the DNS server in your starting kit and pick Flush DNS.</text>
+					<tile>dcsitelead</tile>
+				</flow>
+
+				<flow>
+					<title>The buyout</title>
+					<text>On a site, once you have 12 paying customers, a reputation of 40 and racks that stay up, Ellen Tusk calls to buy you out. The offer is about a year of what the site earns, more for a good reputation and good uptime.</text>
+					<text>Sell, wipe every rack with Erase in two days, and the game ends at that price. Keep it and the next call may be bigger, but a lost site gets nothing. Your biggest buyout is your score.</text>
+					<tile>dcsitelead</tile>
 				</flow>
 
 				<flow>

@@ -357,6 +357,71 @@
 		<buryLocked>true</buryLocked>
 	</dctv>
 
+	<!-- The tech perks (Patrick, 2026-11-04) -->
+	<dcpingpong>
+		<name>Ping pong table</name>
+		<description>Nobody has ever finished a game on it. Goes in a break room. From day 15, in a walled and roofed break room, each one gives 4 people something to do off shift.</description>
+		<type>furniture</type>
+		<happiness>3</happiness>
+		<alwaysOperative>false</alwaysOperative>
+		<zone>zdining</zone>
+		<value>90</value>
+		<bury>true</bury>
+		<buryLocked>true</buryLocked>
+	</dcpingpong>
+
+	<dcbeanbag>
+		<name>Beanbag</name>
+		<description>Your crew sits on it, and getting up is the hard part. It cheers them up more than a chair does.</description>
+		<type>furniture</type>
+		<usedToSit>true</usedToSit>
+		<happiness>3</happiness>
+		<alwaysOperative>false</alwaysOperative>
+		<value>30</value>
+		<bury>true</bury>
+		<buryLocked>true</buryLocked>
+	</dcbeanbag>
+
+	<dcnappod>
+		<name>Nap pod</name>
+		<description>A very expensive cot. Goes in a bunk room. Whoever sleeps in it wakes up much happier.</description>
+		<type>furniture</type>
+		<usedToSleep>true</usedToSleep>
+		<happiness>6</happiness>
+		<alwaysOperative>false</alwaysOperative>
+		<zone>zpersonal</zone>
+		<value>200</value>
+		<bury>true</bury>
+		<buryLocked>true</buryLocked>
+	</dcnappod>
+
+	<dckombuchatap>
+		<name>Kombucha tap</name>
+		<description>Pours a kombucha every few hours while it has power. Keep the cells around it clear.</description>
+		<type>furniture</type>
+		<alwaysOperative>true</alwaysOperative>
+		<dcPower>-1</dcPower>
+		<spawn>dckombucha</spawn>
+		<spawnTurns>1d240+240</spawnTurns>
+		<spawnMaxItems>3</spawnMaxItems>
+		<value>120</value>
+	</dckombuchatap>
+
+	<dckombucha>
+		<name>Kombucha</name>
+		<description>Fills nobody up. Whoever drinks it feels better about themselves for a while.</description>
+		<type>prepfood.snacks</type>
+		<canBeEaten>true</canBeEaten>
+		<maxAge>1d1440+1440</maxAge>
+		<stackable>true</stackable>
+		<stackableSize>1</stackableSize>
+		<foodValue>1</foodValue>
+		<foodFillPCT>20</foodFillPCT>
+		<foodEatTime>8</foodEatTime>
+		<foodEffects>kombuchahappy</foodEffects>
+		<value>4</value>
+	</dckombucha>
+
 	<dcconsole>
 		<name>Game console</name>
 		<description>Goes in a bunk room. From day 15, whoever sleeps there has something to do off shift.</description>
@@ -780,7 +845,7 @@
 
 	<dcswitchwrecked>
 		<name>Wrecked network switch</name>
-		<description>A protester wrecked it. Repair it with a box of spare parts.</description>
+		<description>A protester wrecked it. Repair puts it back.</description>
 		<type>furniture</type>
 		<alwaysOperative>true</alwaysOperative>
 		<dcPower>-1</dcPower>
@@ -792,7 +857,7 @@
 
 	<dcgridcut>
 		<name>Cut grid feed</name>
-		<description>A protester cut its cable. Repair it with a box of spare parts.</description>
+		<description>A protester cut its cable. Repair puts it back.</description>
 		<type>furniture</type>
 		<alwaysOperative>true</alwaysOperative>
 		<dcPower>40</dcPower>
@@ -860,6 +925,68 @@
 		<value>120</value>
 	</dcswitch>
 
+	<!-- The line out, DNS and the old server (Network, OldServer) -->
+	<dcfiber>
+		<name>Fiber line</name>
+		<description>Your customers reach the site through it. A backhoe can cut the line, and so can a shovel: digging near here can hit it. When it is cut, every rack is down until the provider fixes it.</description>
+		<type>furniture</type>
+		<alwaysOperative>true</alwaysOperative>
+		<dcNet>1</dcNet>
+		<locked>true</locked>
+		<canBeUnlocked>false</canBeUnlocked>
+		<value>100</value>
+	</dcfiber>
+
+	<dcfiber2>
+		<name>Second fiber line</name>
+		<description>A second line from another provider. When the first one is cut, this one keeps the site online. One is enough.</description>
+		<type>furniture</type>
+		<alwaysOperative>true</alwaysOperative>
+		<dcNet>2</dcNet>
+		<value>300</value>
+	</dcfiber2>
+
+	<dcfiber2kit>
+		<name>Second fiber line (boxed)</name>
+		<type>hardware</type>
+		<value>150</value>
+	</dcfiber2kit>
+
+	<dcdns>
+		<name>DNS server</name>
+		<description>Turns names into addresses. It has never once been the problem.</description>
+		<type>furniture</type>
+		<alwaysOperative>true</alwaysOperative>
+		<dcNet>3</dcNet>
+		<locked>true</locked>
+		<canBeUnlocked>false</canBeUnlocked>
+		<value>100</value>
+	</dcdns>
+
+	<dcdnsdown>
+		<name>DNS server</name>
+		<description>Turns names into addresses. It has never once been the problem.</description>
+		<type>furniture</type>
+		<alwaysOperative>true</alwaysOperative>
+		<dcNet>4</dcNet>
+		<locked>true</locked>
+		<canBeUnlocked>false</canBeUnlocked>
+		<action>qflushdns</action>
+		<value>100</value>
+	</dcdnsdown>
+
+	<dcoldserver>
+		<name>Old server</name>
+		<description>Nobody knows what it does. A note on it says DO NOT TURN OFF. It uses 4 kW and pays nothing. A technician can pull it, and maybe nothing happens.</description>
+		<type>furniture</type>
+		<alwaysOperative>true</alwaysOperative>
+		<dcPower>-4</dcPower>
+		<locked>true</locked>
+		<canBeUnlocked>false</canBeUnlocked>
+		<action>qpulloldserver</action>
+		<value>10</value>
+	</dcoldserver>
+
 	<dcrackkit>
 		<name>Server rack (boxed)</name>
 		<type>hardware</type>
@@ -904,7 +1031,7 @@
 
 	<dcparts>
 		<name>Spare parts</name>
-		<description>A box of parts for repairing wrecked gear.</description>
+		<description>A box of parts for repairing a wrecked or shorted rack.</description>
 		<type>hardware</type>
 		<value>30</value>
 	</dcparts>

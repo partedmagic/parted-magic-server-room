@@ -46,6 +46,8 @@ import xaos.utils.UtilsIniHeaders;
  * swapped rack counts as new), and last to the batteries that are not full.
  * A rack runs when power, cooling and a network port are all left for it;
  * the map draws the red cross on a rack that cannot run (isDown).
+ * A fiber cut or a DNS failure (Network) leaves the racks running and out of
+ * the customers' reach, which earns nothing and wears the red cross too.
  * Protests (from day 7) wreck racks, switches and the grid feed: the
  * Protests class runs them, and this one keeps the wrecked gear down until a
  * Repair puts it back.
@@ -76,8 +78,8 @@ import xaos.utils.UtilsIniHeaders;
  * and SIGN_BASE in 200).  Only the starting kit's boxed racks have customers
  * waiting for them.  A rack keeps its customer until it is down a full day,
  * and then it is an empty rack again.  Reputation runs 0 to
- * 100 from 50: up at a dawn when every rack ran all day, down for each
- * customer lost and for bad news (Protests, MoveOuts).  It no longer loses
+ * 100 from 50: up at a dawn by how much of the day's pay the racks earned,
+ * down for each customer lost and for bad news (Protests, MoveOuts).  It no longer loses
  * the site at 0: a protest took a site from 42 to 0 in a day (rework play,
  * 2026-10-30); money and crew are the ways to lose.  In the tutorial
  * customers do not leave.
@@ -102,6 +104,9 @@ public final class DataCenter {
     private static final int REASON_COOLING = 1;
     private static final int REASON_NETWORK = 2;
     private static final int REASON_DRIVE = 3;  // REASON_DRIVE + dcDown - 1 for every dcDown
+    // Running, but the customers cannot reach it (Network).  Not in racksDown:
+    // the log and the orange row say why in their own words
+    private static final int REASON_OFFLINE = -2;
 
     // The log's words for each reason, and the status line's for the dcDown ones
     private static final String[] DOWN_KEYS = {
@@ -136,7 +141,13 @@ public final class DataCenter {
     // Customers and reputation (docs/stakes.md, step 2)
     private static final int REPUTATION_START = 50;
     private static final int REPUTATION_MAX = 100;
-    private static final int REPUTATION_GOOD_DAY = 1;
+    // A dawn raises the reputation by how much of the day's pay the racks
+    // earned: since 2026-11-04, when every rack had to run every turn, one
+    // service call spoiled the day and busy sites only ever went down
+    private static final int REPUTATION_GOOD_DAY = 2;
+    private static final int REPUTATION_FAIR_DAY = 1;
+    private static final int UPTIME_GOOD_PCT = 95;
+    private static final int UPTIME_FAIR_PCT = 75;
     private static final int REPUTATION_CUSTOMER_LOST = 5;
     // A wreck that made the news (Protests), and the level the status warns below
     private static final int REPUTATION_NEWS = 2;
@@ -193,6 +204,7 @@ public final class DataCenter {
 
     private static final String[] STARTING_KIT = {
         "dcgrid", "dcswitch", "dccooler", "dcrack", "dcrack", "dcrackkit", "dcrackkit", "dccoolerkit", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
+        "dcfiber", "dcdns", "dcoldserver", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         "dcerasekit", "dcguardpostkit", "dcdrive", "dcdrive", "dcparts", "dcparts", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
         "dcvending", "dccoffeemachine", //$NON-NLS-1$ //$NON-NLS-2$
         "dcsnack", "dcsnack", "dcsnack", "dcsnack", "dccoffee", "dccoffee", "dccoffee", "dccoffee", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
@@ -246,6 +258,11 @@ public final class DataCenter {
     private static long dieselUsedToday;
     private static long payToday;
     private static int turnsToday;
+    // What the racks with customers would have earned today had none been
+    // down, and that as a rate this turn; the dawn's uptime in percent
+    private static long payFullToday;
+    private static int payFullPerDay;
+    private static int uptimePct = 100;
 
     // This turn: the billed draw, the batteries' charge and capacity in
     // kW-turns, and whether there is a grid feed.  The billed draw is the
@@ -329,6 +346,11 @@ public final class DataCenter {
     private static final ArrayList<Item> alHallRacks = new ArrayList<Item>();
     // Gear lying loose at the last count (not installed: it does nothing)
     private static int looseGear;
+    // The orange row counts the hungry from this many, or a third of the crew
+    private static final int HUNGRY_SHOWN_MIN = 3;
+    // Installed machines that put out food (thieves can take them all, and
+    // two days later the crew has starved)
+    private static int foodMachines;
 
     private DataCenter() {
     }
@@ -340,16 +362,20 @@ public final class DataCenter {
     public static void nextTurn() {
         MoveOuts.nextTurn(hsEmptyRacks);
         updateOutage();
+        Network.nextTurn();
         reportHeatWave();
         ArrayList<Item> alRunning = updateHall(true);
         powerUsedToday += gridPower;
         dieselUsedToday += dieselPower;
         payToday += payPerDay;
+        payFullToday += payFullPerDay;
         turnsToday++;
         watchCustomers();
+        OldServer.nextTurn(alHallRacks, isTutorial());
         Protests.nextTurn(alHallRacks, alPosts, alCameras);
         Bear.nextTurn(isTutorial());
         Thieves.nextTurn(isTutorial());
+        Buyout.nextTurn();
         Garden.nextTurn(alRipePlants);
         Roofs.nextTurn();
         Boxes.nextTurn();
@@ -401,6 +427,7 @@ public final class DataCenter {
         powerUsedToday = 0;
         dieselUsedToday = 0;
         payToday = 0;
+        payFullToday = 0;
         turnsToday = 0;
         outageStart = -1;
         outageLength = 0;
@@ -424,7 +451,10 @@ public final class DataCenter {
         Housing.reset();
         Leisure.reset();
         Bear.reset();
+        Buyout.reset();
         Thieves.reset();
+        Network.reset();
+        OldServer.reset();
     }
 
     /**
@@ -440,8 +470,10 @@ public final class DataCenter {
      * thieves (Game.SAVEGAME_THIEVES), then the racks' cells at the last look
      * and the customers still waiting for a rack (Game.SAVEGAME_NEW_RACKS),
      * then the day's diesel draw (Game.SAVEGAME_DIESEL; the thieves' walls
-     * and holes are in Thieves' part).  A lost site is never saved, so its
-     * flag is not either.
+     * and holes are in Thieves' part), then a fiber cut and a DNS failure
+     * (Game.SAVEGAME_NETWORK), then the offers and the sale
+     * (Game.SAVEGAME_BUYOUT).  A lost site is never saved, so its flag is not
+     * either; a sold one neither.
      */
     public static void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(powerUsedToday);
@@ -483,6 +515,9 @@ public final class DataCenter {
         }
         out.writeInt(waitingCustomers);
         out.writeLong(dieselUsedToday);
+        Network.writeExternal(out);
+        out.writeLong(payFullToday);
+        Buyout.writeExternal(out);
     }
 
     /**
@@ -549,6 +584,13 @@ public final class DataCenter {
         if (Game.SAVEGAME_LOADING_VERSION >= Game.SAVEGAME_DIESEL) {
             dieselUsedToday = in.readLong();
         }
+        if (Game.SAVEGAME_LOADING_VERSION >= Game.SAVEGAME_NETWORK) {
+            Network.readExternal(in);
+            payFullToday = in.readLong();
+        }
+        if (Game.SAVEGAME_LOADING_VERSION >= Game.SAVEGAME_BUYOUT) {
+            Buyout.readExternal(in);
+        }
     }
 
     /**
@@ -568,10 +610,23 @@ public final class DataCenter {
         alRipePlants.clear();
         wreckedOther = 0;
         looseGear = 0;
+        foodMachines = 0;
+        Network.startLook();
+        OldServer.startLook();
         for (Item item : World.getItems().values()) {
             ItemManagerItem imi = ItemManager.getItem(item.getIniHeader());
             if (imi != null && isGear(imi) && liesLoose(item)) {
                 looseGear++;
+            }
+            if (imi != null && imi.getDcNet() > 0 && isInstalled(item)) {
+                Network.note(item, imi.getDcNet());
+                continue;
+            }
+            if (OldServer.ITEM.equals(item.getIniHeader()) && isInstalled(item)) {
+                OldServer.note();
+            }
+            if (imi != null && imi.isDataCenter() && imi.getSpawn() != null && isInstalled(item)) {
+                foodMachines++;
             }
             if (imi != null && imi.getDcWater() == WATER_PIPE && isInstalled(item)) {
                 hsPipes.add(itemKey(item));
@@ -610,6 +665,7 @@ public final class DataCenter {
         portsUsed = 0;
         racksOnline = 0;
         payPerDay = 0;
+        payFullPerDay = 0;
         customers = 0;
         racksFailing = 0;
         for (int i = 0; i < racksDown.length; i++) {
@@ -618,6 +674,8 @@ public final class DataCenter {
         hsDownRacks.clear();
         hmDownReason.clear();
         hsWreckedGear.clear();
+        Network.endLook(hsWreckedGear, bTurn);
+        boolean bOffline = Network.isOffline() && !Buyout.isSold();
 
         // What each source gives this turn.  Firm power (the grid and the
         // generators) is billed; solar is not, nor a battery's, which was
@@ -710,7 +768,8 @@ public final class DataCenter {
             }
             boolean bPump = imi.getDcWater() == WATER_PUMP;
             boolean bCamera = imi.getDcSecurity() == SECURITY_CAMERA;
-            boolean bNeeded = imi.getDcCooling() > 0 || imi.getDcPorts() > 0 || bPump || bCamera;
+            // The old server is wired so nothing turns it off but a technician
+            boolean bNeeded = imi.getDcCooling() > 0 || imi.getDcPorts() > 0 || bPump || bCamera || OldServer.ITEM.equals(support.getIniHeader());
             boolean bCanRun = bNeeded || !bOutage;
             if (imi.isDcDown()) {
                 // A wrecked switch is off until it is repaired, and stays
@@ -788,6 +847,7 @@ public final class DataCenter {
             boolean bCustomer = !hsEmptyRacks.contains(itemKey(rack));
             if (bCustomer) {
                 customers++;
+                payFullPerDay += imi.getDcIncome();
             }
             if (imi.isDcDown()) {
                 // A dead drive or a service event: down until a tool fixes it
@@ -824,11 +884,17 @@ public final class DataCenter {
                 powerUsed += iNeed;
                 portsUsed += iPorts;
                 heat += iHeat;
+                alRunning.add(rack);
+                if (bOffline) {
+                    // It runs and draws power, and nobody can reach it
+                    hsDownRacks.add(Integer.valueOf(rack.getID()));
+                    hmDownReason.put(Integer.valueOf(rack.getID()), Integer.valueOf(REASON_OFFLINE));
+                    continue;
+                }
                 if (bCustomer) {
                     payPerDay += imi.getDcIncome();
                 }
                 racksOnline++;
-                alRunning.add(rack);
             } else {
                 racksDown[iReason]++;
                 hsDownRacks.add(Integer.valueOf(rack.getID()));
@@ -1032,8 +1098,11 @@ public final class DataCenter {
         // each turn's pay: paying for the racks running at dawn made an
         // outage over the dawn cost a whole day
         int iPaid = turnsToday > 0 ? (int) Math.round((double) payToday / turnsToday) : payPerDay;
+        uptimePct = payFullToday > 0 ? (int) Math.min(100, payToday * 100 / payFullToday) : 100;
         payToday = 0;
+        payFullToday = 0;
         int iBills = payBills();
+        Buyout.noteDay(iPaid, iBills, uptimePct);
         if (iPaid > 0) {
             Game.getWorld().setCoins(Game.getWorld().getCoins() + iPaid);
             MessagesPanel.addMessage(MessagesPanel.TYPE_SYSTEM, MessageFormat.format(Messages.getString("DataCenter.paid"), iPaid), ColorGL.GREEN); //$NON-NLS-1$
@@ -1049,19 +1118,21 @@ public final class DataCenter {
         if (racksFailing + racksDown[REASON_DRIVE] > 0 && Item.getNumItems(UtilsIniHeaders.getIntIniHeader("dcdrive"), false, World.MAP_DEPTH) == 0) { //$NON-NLS-1$
             MessagesPanel.addMessage(MessagesPanel.TYPE_SYSTEM, Messages.getString("DataCenter.noDrives"), ColorGL.ORANGE); //$NON-NLS-1$
         }
-        // Repair starts by picking up a box of spare parts, the same way
-        if (racksDown[REASON_DRIVE + DOWN_WRECKED - 1] + wreckedOther > 0 && Item.getNumItems(UtilsIniHeaders.getIntIniHeader("dcparts"), false, World.MAP_DEPTH) == 0) { //$NON-NLS-1$
+        // Repairing a rack starts by picking up a box of spare parts, the same way
+        if (racksDown[REASON_DRIVE + DOWN_WRECKED - 1] > 0 && Item.getNumItems(UtilsIniHeaders.getIntIniHeader("dcparts"), false, World.MAP_DEPTH) == 0) { //$NON-NLS-1$
             MessagesPanel.addMessage(MessagesPanel.TYPE_SYSTEM, Messages.getString("DataCenter.noParts"), ColorGL.ORANGE); //$NON-NLS-1$
         }
         rollServiceEvents();
         rollOutage();
         rollHeatWave();
+        Network.newDay(isTutorial() || Buyout.isSold());
         Protests.newDay(isTutorial());
         Bear.newDay(isTutorial());
         Thieves.newDay(isTutorial());
         Housing.newDay(isTutorial(), Morale.newDay(isTutorial()));
         Weather.newDay(isTutorial());
-        MoveOuts.newDay(alRunningRackIDs, hsEmptyRacks, isTutorial());
+        MoveOuts.newDay(alRunningRackIDs, hsEmptyRacks, isTutorial() || Buyout.isSold());
+        Buyout.newDay(customers, reputation, isTutorial());
     }
 
     /**
@@ -1088,7 +1159,7 @@ public final class DataCenter {
         }
         // The bear's victim too: Bury, before a ghost walks (Patrick,
         // 2026-10-31: "how do you bury a dead person?")
-        return imi.isDcDown() || imi.isDcFlagged() || hsWreckedGear.contains(Integer.valueOf(item.getID())) || MoveOuts.VACATED_RACK.equals(item.getIniHeader()) || Bear.BODY.equals(item.getIniHeader());
+        return imi.isDcDown() || imi.isDcFlagged() || hsWreckedGear.contains(Integer.valueOf(item.getID())) || MoveOuts.VACATED_RACK.equals(item.getIniHeader()) || Bear.BODY.equals(item.getIniHeader()) || imi.getDcNet() == Network.NET_DNS_DOWN;
     }
 
     /**
@@ -1114,11 +1185,22 @@ public final class DataCenter {
             }
         }
         Integer iReason = hmDownReason.get(Integer.valueOf(item.getID()));
+        if (iReason != null && iReason.intValue() == REASON_OFFLINE) {
+            return Network.getRackHint();
+        }
         if (iReason != null && iReason.intValue() < HINT_KEYS.length) {
             return Messages.getString(HINT_KEYS[iReason.intValue()]);
         }
-        // A running rack waiting for a customer: what brings one
         ItemManagerItem imi = ItemManager.getItem(item.getIniHeader());
+        // A fiber line that is cut: who fixes it
+        if (imi != null && Network.getBoxHint(imi.getDcNet()) != null) {
+            return Network.getBoxHint(imi.getDcNet());
+        }
+        // A food machine with nowhere to put what it makes
+        if (item.isBoxedIn()) {
+            return Messages.getString("DataCenter.hintNoRoom"); //$NON-NLS-1$
+        }
+        // A running rack waiting for a customer: what brings one
         if (imi != null && imi.getDcIncome() > 0 && isInstalled(item) && hsEmptyRacks.contains(itemKey(item))) {
             return MessageFormat.format(Messages.getString("DataCenter.hintEmpty"), getSignPCT()); //$NON-NLS-1$
         }
@@ -1191,8 +1273,10 @@ public final class DataCenter {
         if (powerSupply == 0 && racks == 0) {
             return null;
         }
+        String sBuyout = Buyout.getStatusBusiness();
         return MessageFormat.format(Messages.getString("DataCenter.statusBusiness"), customers, racks, reputation, payPerDay, getBillsPerDay()) //$NON-NLS-1$
-                + "   " + MessageFormat.format(Messages.getString("DataCenter.statusMorale"), Morale.getMorale()); //$NON-NLS-1$ //$NON-NLS-2$
+                + "   " + MessageFormat.format(Messages.getString("DataCenter.statusMorale"), Morale.getMorale()) //$NON-NLS-1$ //$NON-NLS-2$
+                + (sBuyout == null ? "" : "   " + sBuyout); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
     /**
@@ -1203,6 +1287,12 @@ public final class DataCenter {
      */
     public static String getStatusProblems() {
         ArrayList<String> alParts = new ArrayList<String>();
+        // Sold: the wipe is all that matters now, and no customer is left to
+        // call about DNS
+        String sSale = Buyout.getStatusProblems();
+        if (sSale != null) {
+            return sSale;
+        }
         String sToWipe = MoveOuts.getStatus();
         if (sToWipe != null) {
             alParts.add(sToWipe);
@@ -1229,6 +1319,24 @@ public final class DataCenter {
         if (looseGear > 0) {
             alParts.add(MessageFormat.format(Messages.getString("DataCenter.statusLooseGear"), looseGear)); //$NON-NLS-1$
         }
+        if (foodMachines == 0 && racks > 0 && !isTutorial()) {
+            alParts.add(Messages.getString("DataCenter.statusNoFood")); //$NON-NLS-1$
+        }
+        // What the hall lacks, in words: on 2026-11-04 a stolen switch stopped
+        // every rack and only "Ports 0/0" said why
+        if (racksDown[REASON_NETWORK] > 0) {
+            alParts.add(MessageFormat.format(Messages.getString("DataCenter.statusNoPort"), racksDown[REASON_NETWORK])); //$NON-NLS-1$
+        }
+        if (racksDown[REASON_COOLING] > 0) {
+            alParts.add(MessageFormat.format(Messages.getString("DataCenter.statusNoCooling"), racksDown[REASON_COOLING])); //$NON-NLS-1$
+        }
+        if (racksDown[REASON_POWER] > 0) {
+            alParts.add(MessageFormat.format(Messages.getString("DataCenter.statusNoPower"), racksDown[REASON_POWER])); //$NON-NLS-1$
+        }
+        int iHungry = Morale.getHungry();
+        if (iHungry >= Math.max(HUNGRY_SHOWN_MIN, World.getCitizenIDs().size() / 3)) {
+            alParts.add(MessageFormat.format(Messages.getString("DataCenter.statusHungry"), iHungry)); //$NON-NLS-1$
+        }
         String sDonuts = Protests.getDonutStatus();
         if (sDonuts != null) {
             alParts.add(sDonuts);
@@ -1253,9 +1361,21 @@ public final class DataCenter {
         if (sRoof != null) {
             alParts.add(sRoof);
         }
+        String sUnreachable = Boxes.getUnreachableStatus();
+        if (sUnreachable != null) {
+            alParts.add(sUnreachable);
+        }
         String sBoxes = Boxes.getStatus();
         if (sBoxes != null) {
             alParts.add(sBoxes);
+        }
+        String sDns = Network.getDnsStatus();
+        if (sDns != null) {
+            alParts.add(sDns);
+        }
+        String sFiber = Network.getFiberStatus();
+        if (sFiber != null) {
+            alParts.add(sFiber);
         }
         if (outageLeft > 0) {
             alParts.add(MessageFormat.format(Messages.getString("DataCenter.statusOutage"), (outageLeft + World.TIME_MODIFIER_HOUR - 1) / World.TIME_MODIFIER_HOUR)); //$NON-NLS-1$
@@ -1444,11 +1564,13 @@ public final class DataCenter {
     }
 
     /**
-     * Dawn: a day every rack ran raises the reputation, and a new day starts
+     * Dawn: a day the racks with customers earned most of their pay raises the
+     * reputation, and a new day starts
      */
     private static void updateReputation() {
-        if (racks > 0 && allRanToday && !siteLost) {
-            reputation = Math.min(REPUTATION_MAX, reputation + REPUTATION_GOOD_DAY);
+        if (racks > 0 && !siteLost) {
+            int iGain = uptimePct >= UPTIME_GOOD_PCT ? REPUTATION_GOOD_DAY : uptimePct >= UPTIME_FAIR_PCT ? REPUTATION_FAIR_DAY : 0;
+            reputation = Math.min(REPUTATION_MAX, reputation + iGain);
         }
         allRanToday = true;
     }
@@ -1458,7 +1580,7 @@ public final class DataCenter {
      * the reputation and SIGN_BASE in SIGN_DIE (35% at 50), in install order
      */
     private static void signCustomers() {
-        if (hsEmptyRacks.isEmpty() || siteLost) {
+        if (hsEmptyRacks.isEmpty() || siteLost || Buyout.isSold()) {
             return;
         }
         for (Integer iID : alRunningRackIDs) {
@@ -1744,7 +1866,8 @@ public final class DataCenter {
      * losing the site, a dawn at zero or above starts the count again
      */
     private static void checkBroke() {
-        if (siteLost || isTutorial()) {
+        // A sold site's debts are the buyer's now
+        if (siteLost || isTutorial() || Buyout.isSold()) {
             return;
         }
         if (Game.getWorld().getCoins() >= 0) {
@@ -1772,6 +1895,41 @@ public final class DataCenter {
         }
         MessagesPanel.addMessage(MessagesPanel.TYPE_SYSTEM, Messages.getString(sReasonKey), ColorGL.RED);
         CommandPanel.showSiteLost(Messages.getString(sReasonKey), iDays);
+    }
+
+    /**
+     * The sale has closed (Buyout): the game is over as it is for a lost site,
+     * with the same panel held up and nothing saved after it
+     */
+    static void endSite() {
+        siteLost = true;
+    }
+
+    /**
+     * The sale (Buyout): every installed rack, whatever state it is in, is now a
+     * rack to wipe, and nobody is a customer any more.  A wiped rack comes back
+     * empty (noteNewRacks).
+     *
+     * @return the racks' cell keys
+     */
+    static ArrayList<Integer> vacateRacks() {
+        ArrayList<Item> alRacks = new ArrayList<Item>();
+        for (Item item : World.getItems().values()) {
+            ItemManagerItem imi = ItemManager.getItem(item.getIniHeader());
+            if (imi != null && isInstalled(item) && (imi.getDcIncome() > 0 || MoveOuts.VACATED_RACK.equals(item.getIniHeader()))) {
+                alRacks.add(item);
+            }
+        }
+        ArrayList<Integer> alKeys = new ArrayList<Integer>();
+        for (Item rack : alRacks) {
+            alKeys.add(Integer.valueOf(cellKey(rack)));
+            if (!MoveOuts.VACATED_RACK.equals(rack.getIniHeader())) {
+                replaceRack(rack, MoveOuts.VACATED_RACK);
+            }
+        }
+        waitingCustomers = 0;
+        hmDownTurns.clear();
+        return alKeys;
     }
 
     /**
@@ -1895,6 +2053,10 @@ public final class DataCenter {
      * player had just installed in step 5, nine steps before any word on it.
      */
     private static void rollServiceEvents() {
+        // A sold site has no customers to call
+        if (Buyout.isSold()) {
+            return;
+        }
         MissionData mission = Game.getCurrentMissionData();
         if (mission != null && mission.getTutorialFlows() != null && mission.getTutorialFlows().size() > 1
                 && ImagesPanel.getMaxFlowIndex() < mission.getTutorialFlows().size() - 2) {
@@ -1981,7 +2143,7 @@ public final class DataCenter {
         item.setOperative(true);
         // Installed gear is locked in place like placed furniture; an
         // unlocked item is loose stock that orders may pick up and move
-        item.setLocked(imi.isDataCenter() || imi.isLocked());
+        item.setLocked(imi.isDataCenter() || imi.getDcNet() > 0 || imi.isLocked());
         // No init here, as in ItemGenerator: once the world is made,
         // Game.startGame inits every item on the map (Item.loadItems), and
         // a second init listed each piece twice in the item counts
@@ -1995,7 +2157,7 @@ public final class DataCenter {
      *         which does nothing until it is installed (locked in its cell)
      */
     static boolean isGear(ItemManagerItem imi) {
-        return imi.isDataCenter() || imi.getDcSecurity() > 0 || imi.getDcWater() > 0;
+        return imi.isDataCenter() || imi.getDcSecurity() > 0 || imi.getDcWater() > 0 || imi.getDcNet() > 0;
     }
 
     /**

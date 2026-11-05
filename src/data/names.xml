@@ -1,418 +1,112 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <names>
-	<!-- The technicians' names -->
-	<male>Aaron</male>
-	<male>Adam</male>
-	<male>Alex</male>
-	<male>Andrew</male>
-	<male>Anthony</male>
-	<male>Arjun</male>
-	<male>Ben</male>
-	<male>Brandon</male>
-	<male>Brian</male>
-	<male>Carlos</male>
-	<male>Charles</male>
-	<male>Chris</male>
-	<male>Daniel</male>
-	<male>David</male>
-	<male>Dennis</male>
-	<male>Diego</male>
-	<male>Ethan</male>
-	<male>Frank</male>
-	<male>Gary</male>
-	<male>George</male>
-	<male>Hassan</male>
-	<male>Henry</male>
-	<male>Ivan</male>
-	<male>Jack</male>
-	<male>Jacob</male>
-	<male>James</male>
-	<male>Jason</male>
-	<male>Jeremy</male>
-	<male>John</male>
-	<male>Jonathan</male>
-	<male>Jose</male>
-	<male>Joseph</male>
-	<male>Josh</male>
-	<male>Justin</male>
-	<male>Kenji</male>
-	<male>Kevin</male>
-	<male>Kyle</male>
-	<male>Larry</male>
-	<male>Leo</male>
-	<male>Luis</male>
-	<male>Marcus</male>
-	<male>Mark</male>
-	<male>Mateo</male>
-	<male>Matt</male>
-	<male>Michael</male>
-	<male>Nathan</male>
-	<male>Noah</male>
-	<male>Omar</male>
-	<male>Patrick</male>
-	<male>Paul</male>
-	<male>Peter</male>
-	<male>Raj</male>
-	<male>Ray</male>
-	<male>Robert</male>
-	<male>Ryan</male>
-	<male>Sam</male>
-	<male>Scott</male>
-	<male>Steve</male>
-	<male>Thomas</male>
-	<male>Tim</male>
-	<male>Tyler</male>
-	<male>Victor</male>
-	<male>Wei</male>
-	<male>Will</male>
-	<female>Aisha</female>
-	<female>Alice</female>
-	<female>Amanda</female>
-	<female>Amy</female>
-	<female>Ana</female>
-	<female>Angela</female>
-	<female>Anna</female>
-	<female>Ashley</female>
-	<female>Beth</female>
-	<female>Brenda</female>
-	<female>Carol</female>
-	<female>Chloe</female>
-	<female>Claire</female>
-	<female>Diana</female>
-	<female>Elena</female>
-	<female>Emily</female>
-	<female>Emma</female>
-	<female>Erin</female>
-	<female>Fatima</female>
-	<female>Grace</female>
-	<female>Hannah</female>
-	<female>Heather</female>
-	<female>Helen</female>
-	<female>Jasmine</female>
-	<female>Jenny</female>
-	<female>Jessica</female>
-	<female>Julia</female>
-	<female>Karen</female>
-	<female>Kate</female>
-	<female>Laura</female>
-	<female>Linda</female>
-	<female>Lisa</female>
-	<female>Lucy</female>
-	<female>Maria</female>
-	<female>Megan</female>
-	<female>Mei</female>
-	<female>Melissa</female>
-	<female>Michelle</female>
-	<female>Nancy</female>
-	<female>Natalie</female>
-	<female>Nicole</female>
-	<female>Nina</female>
-	<female>Olivia</female>
-	<female>Pam</female>
-	<female>Priya</female>
-	<female>Rachel</female>
-	<female>Rebecca</female>
-	<female>Rosa</female>
-	<female>Ruth</female>
-	<female>Sandra</female>
-	<female>Sara</female>
-	<female>Sofia</female>
-	<female>Sophie</female>
-	<female>Susan</female>
-	<female>Tina</female>
-	<female>Vanessa</female>
-	<female>Yuki</female>
-	<female>Zoe</female>
-	<surname>Acosta</surname>
-	<surname>Adams</surname>
-	<surname>Alexander</surname>
-	<surname>Allen</surname>
-	<surname>Alvarez</surname>
-	<surname>Anderson</surname>
-	<surname>Andrews</surname>
-	<surname>Armstrong</surname>
-	<surname>Arnold</surname>
-	<surname>Austin</surname>
-	<surname>Bailey</surname>
-	<surname>Baker</surname>
-	<surname>Banks</surname>
-	<surname>Barnes</surname>
-	<surname>Barnett</surname>
-	<surname>Barrett</surname>
-	<surname>Bates</surname>
-	<surname>Beck</surname>
-	<surname>Becker</surname>
-	<surname>Bell</surname>
-	<surname>Bennett</surname>
-	<surname>Berry</surname>
-	<surname>Bishop</surname>
-	<surname>Black</surname>
-	<surname>Boyd</surname>
-	<surname>Bradley</surname>
-	<surname>Brewer</surname>
-	<surname>Brooks</surname>
-	<surname>Brown</surname>
-	<surname>Bryant</surname>
-	<surname>Burke</surname>
-	<surname>Burns</surname>
-	<surname>Butler</surname>
-	<surname>Caldwell</surname>
-	<surname>Campbell</surname>
-	<surname>Carlson</surname>
-	<surname>Carpenter</surname>
-	<surname>Carr</surname>
-	<surname>Carroll</surname>
-	<surname>Carter</surname>
-	<surname>Castillo</surname>
-	<surname>Castro</surname>
-	<surname>Chambers</surname>
-	<surname>Chapman</surname>
-	<surname>Chavez</surname>
-	<surname>Chen</surname>
-	<surname>Clark</surname>
-	<surname>Cohen</surname>
-	<surname>Cole</surname>
-	<surname>Coleman</surname>
-	<surname>Collins</surname>
-	<surname>Cook</surname>
-	<surname>Cooper</surname>
-	<surname>Cortez</surname>
-	<surname>Cox</surname>
-	<surname>Craig</surname>
-	<surname>Crawford</surname>
-	<surname>Cruz</surname>
-	<surname>Cunningham</surname>
-	<surname>Curtis</surname>
-	<surname>Daniels</surname>
-	<surname>Davidson</surname>
-	<surname>Davis</surname>
-	<surname>Day</surname>
-	<surname>Dean</surname>
-	<surname>Delgado</surname>
-	<surname>Diaz</surname>
-	<surname>Dixon</surname>
-	<surname>Douglas</surname>
-	<surname>Duncan</surname>
-	<surname>Dunn</surname>
-	<surname>Edwards</surname>
-	<surname>Elliott</surname>
-	<surname>Ellis</surname>
-	<surname>Evans</surname>
-	<surname>Ferguson</surname>
-	<surname>Fernandez</surname>
-	<surname>Fields</surname>
-	<surname>Fisher</surname>
-	<surname>Fleming</surname>
-	<surname>Flores</surname>
-	<surname>Ford</surname>
-	<surname>Foster</surname>
-	<surname>Fowler</surname>
-	<surname>Fox</surname>
-	<surname>Franklin</surname>
-	<surname>Freeman</surname>
-	<surname>Fuller</surname>
-	<surname>Garcia</surname>
-	<surname>Gardner</surname>
-	<surname>Garrett</surname>
-	<surname>Garza</surname>
-	<surname>Gibson</surname>
-	<surname>Gilbert</surname>
-	<surname>Gomez</surname>
-	<surname>Gonzalez</surname>
-	<surname>Gordon</surname>
-	<surname>Graham</surname>
-	<surname>Grant</surname>
-	<surname>Gray</surname>
-	<surname>Green</surname>
-	<surname>Greene</surname>
-	<surname>Gregory</surname>
-	<surname>Griffin</surname>
-	<surname>Guerrero</surname>
-	<surname>Gutierrez</surname>
-	<surname>Hall</surname>
-	<surname>Hamilton</surname>
-	<surname>Hansen</surname>
-	<surname>Hanson</surname>
-	<surname>Harper</surname>
-	<surname>Harris</surname>
-	<surname>Harrison</surname>
-	<surname>Hart</surname>
-	<surname>Harvey</surname>
-	<surname>Hawkins</surname>
-	<surname>Hayes</surname>
-	<surname>Henderson</surname>
-	<surname>Hernandez</surname>
-	<surname>Herrera</surname>
-	<surname>Hicks</surname>
-	<surname>Hill</surname>
-	<surname>Hoffman</surname>
-	<surname>Holland</surname>
-	<surname>Holmes</surname>
-	<surname>Hopkins</surname>
-	<surname>Howard</surname>
-	<surname>Hudson</surname>
-	<surname>Hughes</surname>
-	<surname>Hunt</surname>
-	<surname>Hunter</surname>
-	<surname>Jackson</surname>
-	<surname>Jacobs</surname>
-	<surname>James</surname>
-	<surname>Jenkins</surname>
-	<surname>Jensen</surname>
-	<surname>Jimenez</surname>
-	<surname>Johnson</surname>
-	<surname>Johnston</surname>
-	<surname>Jones</surname>
-	<surname>Jordan</surname>
-	<surname>Keller</surname>
-	<surname>Kelly</surname>
-	<surname>Kennedy</surname>
-	<surname>Kim</surname>
-	<surname>King</surname>
-	<surname>Knight</surname>
-	<surname>Lambert</surname>
-	<surname>Lane</surname>
-	<surname>Larson</surname>
-	<surname>Lawrence</surname>
-	<surname>Lawson</surname>
-	<surname>Le</surname>
-	<surname>Lee</surname>
-	<surname>Leonard</surname>
-	<surname>Lewis</surname>
-	<surname>Li</surname>
-	<surname>Long</surname>
-	<surname>Lopez</surname>
-	<surname>Lucas</surname>
-	<surname>Lynch</surname>
-	<surname>Marshall</surname>
-	<surname>Martin</surname>
-	<surname>Martinez</surname>
-	<surname>Mason</surname>
-	<surname>Matthews</surname>
-	<surname>May</surname>
-	<surname>Medina</surname>
-	<surname>Mendoza</surname>
-	<surname>Meyer</surname>
-	<surname>Miller</surname>
-	<surname>Mills</surname>
-	<surname>Mitchell</surname>
-	<surname>Molina</surname>
-	<surname>Montgomery</surname>
-	<surname>Moore</surname>
-	<surname>Morales</surname>
-	<surname>Moreno</surname>
-	<surname>Morgan</surname>
-	<surname>Morris</surname>
-	<surname>Murphy</surname>
-	<surname>Murray</surname>
-	<surname>Myers</surname>
-	<surname>Nelson</surname>
-	<surname>Newman</surname>
-	<surname>Nguyen</surname>
-	<surname>Nichols</surname>
-	<surname>Olson</surname>
-	<surname>Ortiz</surname>
-	<surname>Owens</surname>
-	<surname>Palmer</surname>
-	<surname>Park</surname>
-	<surname>Parker</surname>
-	<surname>Patel</surname>
-	<surname>Patterson</surname>
-	<surname>Payne</surname>
-	<surname>Pearson</surname>
-	<surname>Perez</surname>
-	<surname>Perkins</surname>
-	<surname>Perry</surname>
-	<surname>Peters</surname>
-	<surname>Peterson</surname>
-	<surname>Phillips</surname>
-	<surname>Pierce</surname>
-	<surname>Porter</surname>
-	<surname>Powell</surname>
-	<surname>Price</surname>
-	<surname>Ramirez</surname>
-	<surname>Ramos</surname>
-	<surname>Ray</surname>
-	<surname>Reed</surname>
-	<surname>Reid</surname>
-	<surname>Reyes</surname>
-	<surname>Reynolds</surname>
-	<surname>Rice</surname>
-	<surname>Richards</surname>
-	<surname>Richardson</surname>
-	<surname>Riley</surname>
-	<surname>Rivera</surname>
-	<surname>Roberts</surname>
-	<surname>Robinson</surname>
-	<surname>Rodriguez</surname>
-	<surname>Rogers</surname>
-	<surname>Romero</surname>
-	<surname>Rose</surname>
-	<surname>Ross</surname>
-	<surname>Ruiz</surname>
-	<surname>Russell</surname>
-	<surname>Ryan</surname>
-	<surname>Salazar</surname>
-	<surname>Sanchez</surname>
-	<surname>Sanders</surname>
-	<surname>Santos</surname>
-	<surname>Schmidt</surname>
-	<surname>Schneider</surname>
-	<surname>Scott</surname>
-	<surname>Shaw</surname>
-	<surname>Silva</surname>
-	<surname>Simmons</surname>
-	<surname>Simpson</surname>
-	<surname>Singh</surname>
-	<surname>Smith</surname>
-	<surname>Snyder</surname>
-	<surname>Soto</surname>
-	<surname>Spencer</surname>
-	<surname>Stanley</surname>
-	<surname>Stephens</surname>
-	<surname>Stevens</surname>
-	<surname>Stewart</surname>
-	<surname>Stone</surname>
-	<surname>Sullivan</surname>
-	<surname>Taylor</surname>
-	<surname>Thomas</surname>
-	<surname>Thompson</surname>
-	<surname>Torres</surname>
-	<surname>Tran</surname>
-	<surname>Tucker</surname>
-	<surname>Turner</surname>
-	<surname>Vargas</surname>
-	<surname>Vasquez</surname>
-	<surname>Wade</surname>
-	<surname>Wagner</surname>
-	<surname>Walker</surname>
-	<surname>Wallace</surname>
-	<surname>Walsh</surname>
-	<surname>Wang</surname>
-	<surname>Ward</surname>
-	<surname>Warren</surname>
-	<surname>Watkins</surname>
-	<surname>Watson</surname>
-	<surname>Weaver</surname>
-	<surname>Webb</surname>
-	<surname>Weber</surname>
-	<surname>Wells</surname>
-	<surname>West</surname>
-	<surname>Wheeler</surname>
-	<surname>White</surname>
-	<surname>Williams</surname>
-	<surname>Willis</surname>
-	<surname>Wilson</surname>
-	<surname>Wong</surname>
-	<surname>Wood</surname>
-	<surname>Woods</surname>
-	<surname>Wright</surname>
-	<surname>Yang</surname>
-	<surname>Young</surname>
+	<!-- Everybody has a spoof tech name (Patrick, 2026-11-04: "everybody needs a
+	     spoof tech bro name like Ellen Tusk or Sam Alt-Delete").  These are whole
+	     names; Crew.pickName gives each person one nobody on the site has.  The
+	     joke stays on the words in the name.  The comment says who it spoofs.
+	     Ellen Tusk (Elon Musk) is not here: she is the buyer (xaos.datacenter.Buyout). -->
+	<male>Sam Alt-Delete</male> <!-- Sam Altman -->
+	<male>Sam Backup-Fried</male> <!-- Sam Bankman-Fried -->
+	<male>Mark Zuckerbug</male> <!-- Mark Zuckerberg -->
+	<male>Mark Cubicle</male> <!-- Mark Cuban -->
+	<male>Mark Shutdownworth</male> <!-- Mark Shuttleworth -->
+	<male>Jeff Bezels</male> <!-- Jeff Bezos -->
+	<male>Bill Gateway</male> <!-- Bill Gates -->
+	<male>Bill Joystick</male> <!-- Bill Joy -->
+	<male>Tim Cookie</male> <!-- Tim Cook -->
+	<male>Tim Burners-Lee</male> <!-- Tim Berners-Lee -->
+	<male>Steve Cronjobs</male> <!-- Steve Jobs -->
+	<male>Steve Bootmer</male> <!-- Steve Ballmer -->
+	<male>Larry Ellipsis</male> <!-- Larry Ellison -->
+	<male>Larry Pagefault</male> <!-- Larry Page -->
+	<male>Sergey Bin</male> <!-- Sergey Brin -->
+	<male>Satya Nutella</male> <!-- Satya Nadella -->
+	<male>Sundar Patch-AI</male> <!-- Sundar Pichai -->
+	<male>Jensen Hang</male> <!-- Jensen Huang -->
+	<male>Peter Thin-Client</male> <!-- Peter Thiel -->
+	<male>Marc And-Reset</male> <!-- Marc Andreessen -->
+	<male>Jack Daemon</male> <!-- Jack Dorsey -->
+	<male>Read-Only Hastings</male> <!-- Reed Hastings -->
+	<male>Travis Kernel-Panic</male> <!-- Travis Kalanick -->
+	<male>Linus Torvolts</male> <!-- Linus Torvalds -->
+	<male>Gabe Newline</male> <!-- Gabe Newell -->
+	<male>Stewart Bufferfield</male> <!-- Stewart Butterfield -->
+	<male>Kevin Systemd</male> <!-- Kevin Systrom -->
+	<male>Reid Hoffline</male> <!-- Reid Hoffman -->
+	<male>Brian Checksum</male> <!-- Brian Chesky -->
+	<male>Vint Surf</male> <!-- Vint Cerf -->
+	<male>Greg Brickman</male> <!-- Greg Brockman -->
+	<male>Dario Amodem</male> <!-- Dario Amodei -->
+	<male>Palmer Unlucky</male> <!-- Palmer Luckey -->
+	<male>Shawn Fanspeed</male> <!-- Shawn Fanning -->
+	<male>Sean Parked-Domain</male> <!-- Sean Parker -->
+	<male>Max Latency</male> <!-- Max Levchin -->
+	<male>Vitalik Buffering</male> <!-- Vitalik Buterin -->
+	<male>Satoshi Nakamodem</male> <!-- Satoshi Nakamoto -->
+	<male>Patrick Collision</male> <!-- Patrick Collison -->
+	<male>Sebastian Thrash</male> <!-- Sebastian Thrun -->
+	<male>Andrew NaN</male> <!-- Andrew Ng -->
+	<male>Yann LeCache</male> <!-- Yann LeCun -->
+	<male>Garry Tarball</male> <!-- Garry Tan -->
+	<male>Paul Grepham</male> <!-- Paul Graham -->
+	<male>Tom Diskspace</male> <!-- Tom Anderson, of MySpace -->
+	<male>Richard Installman</male> <!-- Richard Stallman -->
+	<male>Craig Bookmark</male> <!-- Craig Newmark -->
+	<male>Theo de RAID</male> <!-- Theo de Raadt -->
+	<male>Guido van Rollback</male> <!-- Guido van Rossum -->
+	<male>Phil Chiller</male> <!-- Phil Schiller -->
+	<male>Eddy Queue</male> <!-- Eddy Cue -->
+	<male>Morris Changelog</male> <!-- Morris Chang -->
+	<male>Dave Packet</male> <!-- Dave Packard -->
+	<male>Thomas Wattson</male> <!-- Thomas Watson -->
+	<male>Seymour Crash</male> <!-- Seymour Cray -->
 
-	<nick>The rock</nick>
-	<nick>The beastfighter</nick>
-	<nick>The clown</nick>
-	<nick>The mad</nick>
-	<nick>Serious</nick>
+	<female>Samantha Alt-Tab</female> <!-- Sam Altman -->
+	<female>Lisa Sudo</female> <!-- Lisa Su -->
+	<female>Sheryl Sandbox</female> <!-- Sheryl Sandberg -->
+	<female>Meg Whitespace</female> <!-- Meg Whitman -->
+	<female>Marissa Mayhem</female> <!-- Marissa Mayer -->
+	<female>Elizabeth Homebrew</female> <!-- Elizabeth Holmes -->
+	<female>Carly Firewall</female> <!-- Carly Fiorina -->
+	<female>Ruth Portscan</female> <!-- Ruth Porat -->
+	<female>Safra Cat-Five</female> <!-- Safra Catz -->
+	<female>Ursula Burn-In</female> <!-- Ursula Burns -->
+	<female>Kara Switcher</female> <!-- Kara Swisher -->
+	<female>Ginni ROM-etty</female> <!-- Ginni Rometty -->
+	<female>Fei-Fei Wi-Fi</female> <!-- Fei-Fei Li -->
+	<female>Whitney Wolfe Nerd</female> <!-- Whitney Wolfe Herd -->
+	<female>Arianna Bufferington</female> <!-- Arianna Huffington -->
+	<female>Diane Green-Screen</female> <!-- Diane Greene -->
+	<female>Radia Perlscript</female> <!-- Radia Perlman -->
+	<female>Sandy Machine-Lerner</female> <!-- Sandy Lerner -->
+	<female>Padmasree Warranty</female> <!-- Padmasree Warrior -->
+	<female>Sarah FireWire</female> <!-- Sarah Friar -->
+	<female>Amy Hoodie</female> <!-- Amy Hood -->
+	<female>Gwynne Hotswap</female> <!-- Gwynne Shotwell -->
+	<female>Jessica Livestream</female> <!-- Jessica Livingston -->
+	<female>Mary Geeker</female> <!-- Mary Meeker -->
+	<female>Grace Hopcount</female> <!-- Grace Hopper -->
+	<female>Ada Lovelatency</female> <!-- Ada Lovelace -->
+	<female>Mira Mirror-Drive</female> <!-- Mira Murati -->
+	<female>Daniela Amodem</female> <!-- Daniela Amodei -->
+	<female>Cher Drive</female> <!-- Cher Wang -->
+	<female>Judy Fault-Tolerant</female> <!-- Judy Faulkner -->
+	<female>Melanie Perks</female> <!-- Melanie Perkins -->
+	<female>Hedy LAMP-Stack</female> <!-- Hedy Lamarr -->
+	<female>Anita Reboot</female> <!-- Anita Borg -->
+	<female>Michelle Del-Key</female> <!-- Michael Dell -->
+	<female>Eva Spigot</female> <!-- Evan Spiegel -->
+	<female>Erica Shift</female> <!-- Eric Schmidt -->
+	<female>Joni Ivy-Bridge</female> <!-- Jony Ive -->
+	<female>Kim Dot-Org</female> <!-- Kim Dotcom -->
+	<female>Alexandra WAN</female> <!-- Alexandr Wang -->
+	<female>Demi Has-a-Bug</female> <!-- Demis Hassabis -->
+	<female>Stevie Batch-Jobs</female> <!-- Steve Jobs -->
+	<female>Lara Pagefile</female> <!-- Larry Page -->
+	<female>Marcy Benioffline</female> <!-- Marc Benioff -->
+	<female>Wilma Logic-Gates</female> <!-- Bill Gates -->
+	<female>Marge Zuckerbyte</female> <!-- Mark Zuckerberg -->
+	<female>Pat Heatsinger</female> <!-- Pat Gelsinger -->
+	<female>Ethel Net</female> <!-- Ethernet -->
+	<female>Megan Byte</female> <!-- megabyte -->
 </names>

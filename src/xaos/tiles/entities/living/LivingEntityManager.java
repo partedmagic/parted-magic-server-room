@@ -394,14 +394,9 @@ public class LivingEntityManager {
                         if (sAux != null) {
                             lemi.setNamePoolTag(sAux);
                         }
-                        sAux = UtilsXML.getChildValue(node.getChildNodes(), "surnamePoolTag"); //$NON-NLS-1$
-                        if (sAux != null) {
-                            lemi.setSurnamePoolTag(sAux);
-                        }
                     } else {
                         lemi.setName(UtilsXML.getChildValue(node.getChildNodes(), "name")); //$NON-NLS-1$
                         lemi.setNamePoolTag(UtilsXML.getChildValue(node.getChildNodes(), "namePoolTag")); //$NON-NLS-1$
-                        lemi.setSurnamePoolTag(UtilsXML.getChildValue(node.getChildNodes(), "surnamePoolTag")); //$NON-NLS-1$
                     }
 
                     // Gender

@@ -44,7 +44,7 @@ public final class MoveOuts {
     static final String VACATED_RACK = "dcrackvacated"; //$NON-NLS-1$
     private static final String HEALTHY_RACK = "dcrack"; //$NON-NLS-1$
     private static final int FROM_DAY = 3;
-    private static final int MOVE_OUT_PCT = 6;
+    private static final int MOVE_OUT_PCT = 4;
     private static final int ERASE_FEE = 40;
     private static final int REPUTATION_NO_CERTIFICATE = 6;
     private static final int REPUTATION_CERTIFICATE = 1;
@@ -147,6 +147,7 @@ public final class MoveOuts {
                 continue;
             }
             hsEmptyRacks.add(entry.getKey());
+            Buyout.noteDriveErased();
             boolean bOnTime = iDay < entry.getValue()[0];
             int iReputation = 0;
             if (bOnTime) {

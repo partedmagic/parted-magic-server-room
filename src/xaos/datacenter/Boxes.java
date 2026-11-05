@@ -3,6 +3,7 @@ package xaos.datacenter;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.TreeSet;
 
 import xaos.actions.Action;
@@ -11,11 +12,15 @@ import xaos.actions.ActionManagerItem;
 import xaos.actions.QueueItem;
 import xaos.main.Game;
 import xaos.main.World;
+import xaos.panels.MessagesPanel;
 import xaos.tasks.TaskManager;
 import xaos.tiles.entities.items.Item;
 import xaos.tiles.entities.items.ItemManager;
 import xaos.tiles.entities.items.ItemManagerItem;
+import xaos.tiles.entities.living.LivingEntity;
+import xaos.utils.ColorGL;
 import xaos.utils.Messages;
+import xaos.utils.Point3DShort;
 import xaos.utils.UtilsIniHeaders;
 import xaos.utils.UtilsString;
 
@@ -39,6 +44,8 @@ public final class Boxes {
 
     private static int turns;
     private static String missing;
+    private static int unreachable;
+    private static final HashSet<Long> hsWarned = new HashSet<Long>();
     // A box's ini header to the name of the job that installs it
     private static HashMap<String, String> hmInstallJobs;
 
@@ -48,6 +55,8 @@ public final class Boxes {
     static void reset() {
         turns = 0;
         missing = null;
+        unreachable = 0;
+        hsWarned.clear();
     }
 
     static void nextTurn() {
@@ -56,6 +65,82 @@ public final class Boxes {
         }
         turns = 0;
         missing = findMissing();
+        unreachable = findUnreachable();
+    }
+
+    /**
+     * Queued place orders nobody on the crew can walk to: a wall, a river or a
+     * roof cut the spot off (2026-11-04).  Each gets one log line that jumps to
+     * it.  Roof orders are Roofs' business: they wait for a ladder.
+     *
+     * @return how many there are
+     */
+    private static int findUnreachable() {
+        HashSet<Integer> hsZones = new HashSet<Integer>();
+        for (Integer iID : World.getCitizenIDs()) {
+            LivingEntity le = World.getLivingEntityByID(iID.intValue());
+            if (le != null) {
+                hsZones.add(Integer.valueOf(World.getCell(le.getCoordinates()).getAstarZoneID()));
+            }
+        }
+        if (hsZones.isEmpty()) {
+            return 0;
+        }
+        int iCount = 0;
+        HashSet<Long> hsNow = new HashSet<Long>();
+        TaskManager taskManager = Game.getWorld().getTaskManager();
+        ArrayList<ArrayList<Action>> alLists = new ArrayList<ArrayList<Action>>();
+        alLists.add(taskManager.getCustomActions());
+        alLists.add(taskManager.getCustomActionsTemp());
+        alLists.add(taskManager.getCustomActionsWait());
+        for (ArrayList<Action> alActions : alLists) {
+            for (int i = 0; i < alActions.size(); i++) {
+                Action action = alActions.get(i);
+                Point3DShort p3d = action.getDestinationPoint();
+                ActionManagerItem ami = ActionManager.getItem(action.getId());
+                if (p3d == null || ami == null || ami.getGeneratedItem() == null || isRoof(ami) || canReach(p3d, hsZones)) {
+                    continue;
+                }
+                iCount++;
+                Long lKey = Long.valueOf(((long) p3d.z << 40) | ((long) p3d.x << 20) | p3d.y);
+                hsNow.add(lKey);
+                if (!hsWarned.contains(lKey)) {
+                    if (Game.isHeadless()) {
+                        System.out.println("[DataCenter] " + Game.getWorld().getDate() + " order out of reach " + ami.getId() + " at " + p3d.x + "," + p3d.y + "," + p3d.z); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+                    }
+                    MessagesPanel.addMessage(MessagesPanel.TYPE_ANNOUNCEMENT, MessageFormat.format(Messages.getString("DataCenter.orderUnreachable"), ami.getName()), ColorGL.ORANGE, p3d); //$NON-NLS-1$
+                }
+            }
+        }
+        hsWarned.clear();
+        hsWarned.addAll(hsNow);
+        return iCount;
+    }
+
+    private static boolean isRoof(ActionManagerItem ami) {
+        ItemManagerItem imi = ItemManager.getItem(ami.getGeneratedItem());
+        return imi != null && imi.isDcRoof();
+    }
+
+    /** The spot or a cell touching it is in a walk zone someone on the crew stands in */
+    private static boolean canReach(Point3DShort p3d, HashSet<Integer> hsZones) {
+        for (int z = Math.max(0, p3d.z - 1); z <= Math.min(World.MAP_DEPTH - 1, p3d.z + 1); z++) {
+            for (int x = Math.max(0, p3d.x - 1); x <= Math.min(World.MAP_WIDTH - 1, p3d.x + 1); x++) {
+                for (int y = Math.max(0, p3d.y - 1); y <= Math.min(World.MAP_HEIGHT - 1, p3d.y + 1); y++) {
+                    if (hsZones.contains(Integer.valueOf(World.getCell(x, y, z).getAstarZoneID()))) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @return "Orders nobody can reach N" for the orange row, or null
+     */
+    static String getUnreachableStatus() {
+        return unreachable > 0 ? MessageFormat.format(Messages.getString("DataCenter.statusUnreachable"), unreachable) : null; //$NON-NLS-1$
     }
 
     /**

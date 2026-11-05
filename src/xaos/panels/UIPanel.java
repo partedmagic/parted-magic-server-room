@@ -5208,6 +5208,8 @@ public final class UIPanel {
 					alTexts.add (TypingPanel.getNewText ());
 					World.getItemsText ().put (iItemID, alTexts);
 				}
+			} else if (TypingPanel.TYPING_TYPE == TypingPanel.TYPE_COMPANY_NAME) {
+				CommandPanel.postCompanyName (TypingPanel.getNewText ());
 			}
 
 			typingPanel = null;

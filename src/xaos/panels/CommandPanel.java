@@ -18,7 +18,9 @@ import xaos.data.CitizenGroupData;
 import xaos.data.CitizenGroups;
 import xaos.data.Type;
 import xaos.data.Types;
+import xaos.datacenter.Buyout;
 import xaos.datacenter.DataCenter;
+import xaos.datacenter.Leaderboard;
 import xaos.events.EventManager;
 import xaos.events.EventManagerItem;
 import xaos.main.Game;
@@ -194,6 +196,10 @@ public final class CommandPanel {
     // System commands
     public static final String COMMAND_EXIT_GAME = "EXITGAME"; //$NON-NLS-1$
     public static final String COMMAND_EXIT_TO_MAIN_MENU = "EXITTOMM"; //$NON-NLS-1$
+    public static final String COMMAND_BUYOUT_SELL = "BUYOUTSELL"; //$NON-NLS-1$
+    public static final String COMMAND_BUYOUT_KEEP = "BUYOUTKEEP"; //$NON-NLS-1$
+    public static final String COMMAND_LEADERBOARD_POST = "LEADERBOARDPOST"; //$NON-NLS-1$
+    public static final String COMMAND_LEADERBOARD_SEE = "LEADERBOARDSEE"; //$NON-NLS-1$
     public static final String COMMAND_EXIT_TO_MAIN_MENU_SAVE = "EXITTOMMSAVE"; //$NON-NLS-1$
     public static final String COMMAND_EXIT_TO_MAIN_MENU_NOSAVE = "EXITTOMMNOSAVE"; //$NON-NLS-1$
     public static final String COMMAND_BURY = "BURY"; //$NON-NLS-1$
@@ -234,6 +240,15 @@ public final class CommandPanel {
     // The panel shown when the site is lost (DataCenter), kept up, with the
     // game paused, until the player goes back to the main menu
     private static ContextMenu siteLostMenu;
+    // The buyer's call (Buyout): up until the player answers
+    private static ContextMenu offerMenu;
+    private static boolean offerPausedBefore;
+    // The last screen of a sale, kept to draw it again as the post goes out
+    private static ArrayList<String> alSoldLines;
+    private static int soldLeaderboardState;
+    private static int soldPrice;
+    private static int soldDays;
+    private static String soldSite;
 
     public int renderX;
     public int renderY;
@@ -250,6 +265,8 @@ public final class CommandPanel {
         gameMenu = null;
         gameMenuPausing = false;
         siteLostMenu = null;
+        offerMenu = null;
+        alSoldLines = null;
     }
 
     /**
@@ -276,15 +293,181 @@ public final class CommandPanel {
     }
 
     /**
+     * The buyer calls (Buyout): the offer, and Sell or Keep it.  The game waits
+     * for the answer.
+     */
+    public static void showOffer(String sBuyer, int iPrice, int iMissedPct) {
+        if (Game.getCurrentState() == Game.STATE_CREATING_TASK) {
+            Game.deleteCurrentTask();
+        }
+        offerPausedBefore = Game.isPaused();
+        SmartMenu smOffer = new SmartMenu();
+        addPanelTitle(smOffer, MessageFormat.format(Messages.getString("CommandPanel.offerTitle"), sBuyer)); //$NON-NLS-1$
+        addPanelLine(smOffer, null);
+        addPanelLine(smOffer, MessageFormat.format(Messages.getString("CommandPanel.offerPrice"), iPrice)); //$NON-NLS-1$
+        addPanelLine(smOffer, Messages.getString("CommandPanel.offerWhy")); //$NON-NLS-1$
+        addPanelLine(smOffer, null);
+        addPanelLine(smOffer, Messages.getString("CommandPanel.offerSell1")); //$NON-NLS-1$
+        addPanelLine(smOffer, MessageFormat.format(Messages.getString("CommandPanel.offerSell2"), iMissedPct)); //$NON-NLS-1$
+        addPanelLine(smOffer, MessageFormat.format(Messages.getString("CommandPanel.offerKeep1"), sBuyer)); //$NON-NLS-1$
+        addPanelLine(smOffer, Messages.getString("CommandPanel.offerKeep2")); //$NON-NLS-1$
+        addPanelLine(smOffer, null);
+        smOffer.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, MessageFormat.format(Messages.getString("CommandPanel.offerButtonSell"), iPrice), null, COMMAND_BUYOUT_SELL, null, null, null, Color.GREEN)); //$NON-NLS-1$
+        smOffer.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("CommandPanel.offerButtonKeep"), null, COMMAND_BUYOUT_KEEP, null, null, null, Color.GREEN)); //$NON-NLS-1$
+        offerMenu = new ContextMenu();
+        offerMenu.setSmartMenu(smOffer);
+        offerMenu.setX(UtilsGL.getWidth() / 2 - offerMenu.getWidth() / 2);
+        offerMenu.setY(UtilsGL.getHeight() / 2 - offerMenu.getHeight() / 2);
+        Game.setContextMenu(offerMenu);
+        Game.pause(false);
+    }
+
+    /**
+     * @return true while the buyer's offer waits for an answer
+     */
+    public static boolean isOfferShowing() {
+        return offerMenu != null;
+    }
+
+    /**
+     * The sale has closed (Buyout): the price, the run and a joke.  Held up like
+     * the lost site's panel, since the game is over.
+     */
+    public static void showSold(String sBuyer, int iPrice, int iOffer, int iMissed, int iMissedPct, int iDays, int iDrives, int iRank, String sSite) {
+        if (Game.getCurrentState() == Game.STATE_CREATING_TASK) {
+            Game.deleteCurrentTask();
+        }
+        alSoldLines = new ArrayList<String>();
+        alSoldLines.add(MessageFormat.format(Messages.getString("CommandPanel.soldPrice"), sBuyer, iPrice)); //$NON-NLS-1$
+        if (iMissed > 0) {
+            alSoldLines.add(MessageFormat.format(Messages.getString("CommandPanel.soldMissed"), iMissed, iMissedPct, iOffer)); //$NON-NLS-1$
+        }
+        alSoldLines.add(MessageFormat.format(Messages.getString("CommandPanel.soldDays"), iDays, iDrives)); //$NON-NLS-1$
+        alSoldLines.add(MessageFormat.format(Messages.getString("CommandPanel.soldJoke"), sBuyer)); //$NON-NLS-1$
+        alSoldLines.add(null);
+        alSoldLines.add(iRank == 1 ? Messages.getString("CommandPanel.soldBest") : MessageFormat.format(Messages.getString("CommandPanel.soldRank"), iRank)); //$NON-NLS-1$ //$NON-NLS-2$
+        soldPrice = iPrice;
+        soldDays = iDays;
+        soldSite = sSite;
+        Leaderboard.reset();
+        drawSoldPanel();
+    }
+
+    /**
+     * The last screen as it stands, with what the post to the leaderboard has
+     * come to.  Drawn again each time that changes (updateGameMenuPause).
+     */
+    private static void drawSoldPanel() {
+        soldLeaderboardState = Leaderboard.getState();
+        SmartMenu smSold = new SmartMenu();
+        addPanelTitle(smSold, Messages.getString("CommandPanel.soldTitle")); //$NON-NLS-1$
+        addPanelLine(smSold, null);
+        for (String sLine : alSoldLines) {
+            addPanelLine(smSold, sLine);
+        }
+        if (Leaderboard.isOn()) {
+            addPanelLine(smSold, null);
+            String sResult = getLeaderboardLine();
+            if (sResult != null) {
+                addPanelLine(smSold, sResult);
+            }
+            if (soldLeaderboardState == Leaderboard.STATE_POSTED || soldLeaderboardState == Leaderboard.STATE_HAS_BIGGER) {
+                if (Leaderboard.hasPage()) {
+                    smSold.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("CommandPanel.postSee"), null, COMMAND_LEADERBOARD_SEE, null, null, null, Color.GREEN)); //$NON-NLS-1$
+                }
+            } else if (soldLeaderboardState != Leaderboard.STATE_SENDING) {
+                smSold.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("CommandPanel.postItem"), null, COMMAND_LEADERBOARD_POST, null, null, null, Color.GREEN)); //$NON-NLS-1$
+            }
+        }
+        addPanelLine(smSold, null);
+        smSold.addItem(new SmartMenu(SmartMenu.TYPE_ITEM, Messages.getString("CommandPanel.lostMenu"), null, COMMAND_EXIT_TO_MAIN_MENU_NOSAVE, null, null, null, Color.GREEN)); //$NON-NLS-1$
+        siteLostMenu = new ContextMenu();
+        siteLostMenu.setSmartMenu(smSold);
+        siteLostMenu.setX(UtilsGL.getWidth() / 2 - siteLostMenu.getWidth() / 2);
+        siteLostMenu.setY(UtilsGL.getHeight() / 2 - siteLostMenu.getHeight() / 2);
+        Game.setContextMenu(siteLostMenu);
+        Game.pause(false);
+    }
+
+    /**
+     * @return the last screen's line about the post, null before one
+     */
+    private static String getLeaderboardLine() {
+        switch (soldLeaderboardState) {
+            case Leaderboard.STATE_SENDING:
+                return Messages.getString("CommandPanel.postSending"); //$NON-NLS-1$
+            case Leaderboard.STATE_POSTED:
+                return MessageFormat.format(Messages.getString("CommandPanel.postDone"), Leaderboard.getLastName(), Leaderboard.getRank(), Leaderboard.getTotal()); //$NON-NLS-1$
+            case Leaderboard.STATE_HAS_BIGGER:
+                return MessageFormat.format(Messages.getString("CommandPanel.postBigger"), Leaderboard.getLastName(), Leaderboard.getRank(), Leaderboard.getTotal()); //$NON-NLS-1$
+            case Leaderboard.STATE_BAD_NAME:
+                return Messages.getString("CommandPanel.postBadName"); //$NON-NLS-1$
+            case Leaderboard.STATE_BUSY:
+                return Messages.getString("CommandPanel.postBusy"); //$NON-NLS-1$
+            case Leaderboard.STATE_REFUSED:
+                return Messages.getString("CommandPanel.postRefused"); //$NON-NLS-1$
+            case Leaderboard.STATE_NO_REPLY:
+                return Messages.getString("CommandPanel.postNoReply"); //$NON-NLS-1$
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Post it: the player names the company first.  The panel is ready with the
+     * site's name, or the name last tried.
+     */
+    private static void askCompanyName() {
+        UIPanel.typingPanel = new TypingPanel(UtilsGL.getWidth(), UtilsGL.getHeight(), Messages.getString("CommandPanel.postAsk"), "", TypingPanel.TYPE_COMPANY_NAME, 0); //$NON-NLS-1$ //$NON-NLS-2$
+        String sName = Leaderboard.getLastName() != null ? Leaderboard.getLastName() : Game.getSavegameName();
+        if (sName != null) {
+            TypingPanel.setNewText(sName.length() > Leaderboard.NAME_MAX ? sName.substring(0, Leaderboard.NAME_MAX) : sName);
+        }
+        TypingPanel.setSubTitle(Messages.getString("CommandPanel.postPrivacy")); //$NON-NLS-1$
+    }
+
+    /**
+     * The name was typed (UIPanel.closeTypingPanel).  Empty means Escape.
+     */
+    public static void postCompanyName(String sName) {
+        if (sName != null && sName.trim().length() > 0) {
+            Leaderboard.post(sName.trim(), soldPrice, soldDays, soldSite);
+        }
+    }
+
+    private static void addPanelLine(SmartMenu smPanel, String sLine) {
+        smPanel.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, sLine, null, null, null));
+    }
+
+    private static void addPanelTitle(SmartMenu smPanel, String sLine) {
+        smPanel.addItem(new SmartMenu(SmartMenu.TYPE_TEXT, sLine, null, null, null, null, null, Color.YELLOW));
+    }
+
+    /**
      * Pauses the game while the game menu (Escape) is open, its Options pages
      * included, and resumes it when the menu closes, however it closes,
      * unless it was paused before.  Every frame (Game, before the turn).  A
      * lost site keeps its panel up and the game paused.
      */
     public static void updateGameMenuPause() {
+        if (offerMenu != null) {
+            if (Game.getCurrentState() != Game.STATE_SHOWING_CONTEXT_MENU || Game.getCurrentContextMenu() != offerMenu) {
+                Game.setContextMenu(offerMenu);
+            }
+            Game.pause(false);
+            return;
+        }
         if (siteLostMenu != null && DataCenter.isSiteLost()) {
-            if (Game.getCurrentState() != Game.STATE_SHOWING_CONTEXT_MENU || Game.getCurrentContextMenu() != siteLostMenu) {
-                Game.setContextMenu(siteLostMenu);
+            // Not over the panel where the company's name is being typed
+            if (UIPanel.typingPanel == null) {
+                // A click on an item leaves a ContextMenu with no SmartMenu, and
+                // the last screen stays up after its links
+                if (alSoldLines != null && (Leaderboard.getState() != soldLeaderboardState || siteLostMenu.getSmartMenu() == null)) {
+                    drawSoldPanel();
+                }
+                if (Game.getCurrentState() != Game.STATE_SHOWING_CONTEXT_MENU || Game.getCurrentContextMenu() != siteLostMenu) {
+                    Game.setContextMenu(siteLostMenu);
+                }
             }
             Game.pause(false);
             return;
@@ -1103,6 +1286,20 @@ public final class CommandPanel {
             } else if (sCommand.equals(COMMAND_EXIT_TO_MAIN_MENU_SAVE)) {
                 executeCommand(COMMAND_SAVE, null, null, null, null, 0);
                 executeCommand(COMMAND_EXIT_TO_MAIN_MENU_NOSAVE, null, null, null, null, 0);
+            } else if (sCommand.equals(COMMAND_LEADERBOARD_POST)) {
+                askCompanyName();
+            } else if (sCommand.equals(COMMAND_LEADERBOARD_SEE)) {
+                Leaderboard.openPage();
+            } else if (sCommand.equals(COMMAND_BUYOUT_SELL) || sCommand.equals(COMMAND_BUYOUT_KEEP)) {
+                offerMenu = null;
+                if (!offerPausedBefore) {
+                    Game.resume(false);
+                }
+                if (sCommand.equals(COMMAND_BUYOUT_SELL)) {
+                    Buyout.sell();
+                } else {
+                    Buyout.keep();
+                }
             } else if (sCommand.equals(COMMAND_EXIT_TO_MAIN_MENU_NOSAVE)) {
                 UtilsAL.stopMusic();
                 UtilsAL.stopFX();

@@ -105,6 +105,11 @@
 			<quantity>1</quantity>
 		</item>
 		<item>
+			<id>dcfiber2kit</id>
+			<PCT>100</PCT>
+			<quantity>1</quantity>
+		</item>
+		<item>
 			<id>dcerasekit</id>
 			<PCT>100</PCT>
 			<quantity>1</quantity>

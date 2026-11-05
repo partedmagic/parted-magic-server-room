@@ -30,7 +30,6 @@ public class LivingEntityManagerItem {
 
     private String name;
     private String namePoolTag;
-    private String surnamePoolTag;
     private boolean female;
     private String attack;
     private String attackSpeed;
@@ -137,7 +136,6 @@ public class LivingEntityManagerItem {
 
         this.name = lemi.getName();
         this.namePoolTag = lemi.getNamePoolTag();
-        this.surnamePoolTag = lemi.getSurnamePoolTag();
         this.female = lemi.isFemale();
         this.attack = lemi.getAttack();
         this.attackSpeed = lemi.getAttackSpeed();
@@ -308,14 +306,6 @@ public class LivingEntityManagerItem {
 
     public String getNamePoolTag() {
         return namePoolTag;
-    }
-
-    public void setSurnamePoolTag(String surnamePoolTag) {
-        this.surnamePoolTag = surnamePoolTag;
-    }
-
-    public String getSurnamePoolTag() {
-        return surnamePoolTag;
     }
 
     public void setFemale(boolean female) {

@@ -34,7 +34,7 @@
 
         <item id="back" name="Back" code="BACK" icon="ui_back" />
     </zones>
-    <item id="dcrepair" name="Repair" code="CUSTOMACTION" parameter="qrepairrack,qrepairswitch,qrepairgrid" icon="ui_dcrepair" description="Fixes wrecked gear with a box of spare parts." />
+    <item id="dcrepair" name="Repair" code="CUSTOMACTION" parameter="qrepairrack,qrepairswitch,qrepairgrid" icon="ui_dcrepair" description="Fixes wrecked gear. A rack takes a box of spare parts." />
     <item id="dcbury" name="Bury" code="CUSTOMACTION" parameter="qdcbury" icon="ui_dcbury" description="Buries a body in a grave, so no ghost walks. Construction workers do it." />
     <item id="destroyscaffold" code="CUSTOMACTION" name="Destroy scaffolds" parameter="destroyscaffold" icon="ui_destroyscaffold"/>
     <item id="cancel" name="Cancel order" code="CANCELORDER" icon="ui_cancel" />

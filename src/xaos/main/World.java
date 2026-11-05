@@ -1457,9 +1457,11 @@ public final class World implements Externalizable {
 
 		// Tenemos el punto de inicio, creamos aldeanos
 		// Technicians first, then construction workers (Crew)
+		Crew.startStartingCrew ();
 		for (int i = 0; i < MapGenerator.NUM_CITIZENS; i++) {
 			addNewLiving (Crew.getStartingType (i), LivingEntity.TYPE_CITIZEN, true, p3d.x, p3d.y, p3d.z);
 		}
+		Crew.endStartingCrew ();
 
 		// The data center they arrive to
 		DataCenter.placeStartingKit (p3d.x, p3d.y, p3d.z);

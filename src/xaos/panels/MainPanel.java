@@ -2308,11 +2308,13 @@ public final class MainPanel {
 							alMessages.add (cit.getCitizenData ().getFullName () + " (" + cit.getLivingEntityData ().getHealthStatus () + ") (" + Game.getWorld ().getSoldierGroups ().getGroup (cit.getSoldierData ().getGroup ()).getName () + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 							alColor.add (ColorGL.YELLOW);
 						} else {
+							// No fighting: nothing hurts the crew, so no "(healthy)"
+							String sHealth = TownsProperties.FIGHTING ? " (" + cit.getLivingEntityData ().getHealthStatus () + ")" : ""; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 							// Grupo
 							if (cit.getCitizenData ().getGroupID () != -1 && Game.getWorld ().getCitizenGroups ().getGroup (cit.getCitizenData ().getGroupID ()) != null) {
-								alMessages.add (cit.getCitizenData ().getFullName () + ", " + Crew.getRoleName (cit) + " (" + cit.getLivingEntityData ().getHealthStatus () + ") (" + Game.getWorld ().getCitizenGroups ().getGroup (cit.getCitizenData ().getGroupID ()).getName () + ")"); //$NON-NLS-1$ //$NON-NLS-2$);
+								alMessages.add (cit.getCitizenData ().getFullName () + ", " + Crew.getRoleName (cit) + sHealth + " (" + Game.getWorld ().getCitizenGroups ().getGroup (cit.getCitizenData ().getGroupID ()).getName () + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 							} else {
-								alMessages.add (cit.getCitizenData ().getFullName () + ", " + Crew.getRoleName (cit) + " (" + cit.getLivingEntityData ().getHealthStatus () + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$);
+								alMessages.add (cit.getCitizenData ().getFullName () + ", " + Crew.getRoleName (cit) + sHealth); //$NON-NLS-1$
 							}
 							alColor.add (ColorGL.YELLOW);
 						}
@@ -2427,6 +2429,24 @@ public final class MainPanel {
 
 
 	public static void renderMessages (int x, int y, int renderWidth, int renderHeight, int SEPARADOR, ArrayList<String> alMessages, ArrayList<ColorGL> alColor) {
+		// A long line goes on more lines: the build menu's item descriptions ran
+		// off the screen (the donut case's lost its second half)
+		boolean bWrap = false;
+		for (int i = 0; i < alMessages.size () && !bWrap; i++) {
+			bWrap = UtilFont.getWidth (alMessages.get (i)) > TOOLTIP_WRAP_WIDTH;
+		}
+		if (bWrap) {
+			ArrayList<String> alWrapped = new ArrayList<String> ();
+			ArrayList<ColorGL> alWrappedColor = new ArrayList<ColorGL> ();
+			for (int i = 0; i < alMessages.size (); i++) {
+				for (String sLine : wrapTooltipLine (alMessages.get (i))) {
+					alWrapped.add (sLine);
+					alWrappedColor.add (alColor.get (i));
+				}
+			}
+			alMessages = alWrapped;
+			alColor = alWrappedColor;
+		}
 		if (alMessages.size () > 0) {
 			int iWidth = UtilFont.getWidth (alMessages.get (0));
 			int iMaxLength = iWidth;

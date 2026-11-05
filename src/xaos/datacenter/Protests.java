@@ -5,6 +5,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -39,9 +40,13 @@ import xaos.utils.Utils;
  * one; getRaidCap), all at once, each to its own rack, network switch or
  * grid feed, which takes five minutes to wreck, or to a used drive left
  * lying about unerased, which one walks off with: a data breach on the
- * news.  A wreck makes the news too and costs more.  They are FRIENDLY
- * livings that never wander (livingentities.xml), so this class walks
- * them (setDestination); nothing can hurt them.  Walls
+ * news.  A wreck makes the news too and costs more.  No two on the map look
+ * alike (Patrick, 2026-11-04: "it looks really dumb having the exact same
+ * protesters standing next to each other"): each of the 25 types is a look of
+ * its own, a newcomer takes one nobody is wearing (getFreeLook), and with all
+ * 25 out nobody else comes.  They are FRIENDLY livings that never wander
+ * (livingentities.xml), so this class walks them (setDestination); nothing
+ * can hurt them.  Walls
  * stop them, but since 2026-11-01 doors do not (Patrick: "Get rid of the
  * door stops people. only guards stop people."): they walk through a door
  * open or shut, as the thieves do (walksThroughDoors, LivingEntity).  A
@@ -63,12 +68,24 @@ import xaos.utils.Utils;
 public final class Protests {
 
     private static final int PROTEST_FROM_DAY = 3;
-    private static final int PROTEST_PCT = 35;
+    // A dawn's chance of a protest grows with the site: a small hall draws few
+    // (Patrick's "protests that grow with the site"; 35% flat until 2026-11-04
+    // cost a 4-rack site more in parts than it could earn)
+    private static final int PROTEST_BASE_PCT = 15;
+    private static final int PROTEST_PCT_PER_RACK = 2;
+    private static final int PROTEST_MAX_PCT = 45;
+    // One protest wrecks at most one thing and one more for every RACKS_PER_WRECK
+    // racks: with no limit, one could leave a 4-rack site with nothing running
+    private static final int RACKS_PER_WRECK = 4;
     private static final int MAX_CROWD = 12;
     private static final int WAVE_TURNS = 2 * World.TIME_MODIFIER_HOUR;    // two hours between waves
-    private static final String[] PROTESTER_TYPES = {"protester1", "protester2", "protester3"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-    private static final String GUARD_TYPE = Crew.GUARD_TYPE;
-    private static final int SLOGANS = 8;
+    private static final String[] PROTESTER_TYPES = new String[25];
+    static {
+        for (int i = 0; i < PROTESTER_TYPES.length; i++) {
+            PROTESTER_TYPES[i] = "protester" + (i + 1); //$NON-NLS-1$
+        }
+    }
+    private static final int CROWD_REACH = 6;
     private static final int SPOT_MIN = 4;
     private static final int SPOT_MAX = 7;
     private static final int CAMERA_RANGE = 8;
@@ -104,6 +121,8 @@ public final class Protests {
 
     // The hall's racks at the last turn, for the size of a raid
     private static int hallRacks;
+    // What this protest has wrecked (not saved: a load gives it its limit back)
+    private static int wrecksThisProtest;
 
     // The protesters: living ID, errand, target cell key, timer
     private static final ArrayList<int[]> alProtesters = new ArrayList<int[]>();
@@ -284,7 +303,7 @@ public final class Protests {
         if (bTutorial || protestStart >= 0 || protestLeft > 0 || !alProtesters.isEmpty() || Game.getWorld().getDate().getDaysSinceStart() < PROTEST_FROM_DAY) {
             return;
         }
-        if (Utils.getRandomBetween(1, 100) <= PROTEST_PCT) {
+        if (Utils.getRandomBetween(1, 100) <= Math.min(PROTEST_MAX_PCT, PROTEST_BASE_PCT + hallRacks * PROTEST_PCT_PER_RACK)) {
             protestStart = Utils.getRandomBetween(1, 20) * World.TIME_MODIFIER_HOUR;
         }
     }
@@ -369,24 +388,49 @@ public final class Protests {
         protestSpot = cellKey(spot.x, spot.y, spot.z);
         protestEntry = cellKey(border.x, border.y, border.z);
         protestLeft = Utils.getRandomBetween(6, 10) * World.TIME_MODIFIER_HOUR;
+        wrecksThisProtest = 0;
         protestRaid = protestLeft;
         if (Game.isHeadless()) {
             System.out.println("[DataCenter] " + Game.getWorld().getDate() + " protest of " + alProtesters.size() + " at " + spot.x + "," + spot.y + "," + spot.z); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
         }
-        MessagesPanel.addMessage(MessagesPanel.TYPE_SYSTEM, MessageFormat.format(Messages.getString("DataCenter.protestStart"), slogan(alProtesters.get(0)[0])), ColorGL.ORANGE, new Point3DShort(spot.x, spot.y, spot.z)); //$NON-NLS-1$
+        MessagesPanel.addMessage(MessagesPanel.TYPE_SYSTEM, MessageFormat.format(Messages.getString("DataCenter.protestStart"), slogan(World.getLivingEntityByID(alProtesters.get(0)[0]))), ColorGL.ORANGE, new Point3DShort(spot.x, spot.y, spot.z)); //$NON-NLS-1$
     }
 
     /**
      * One more protester walks in from the border to the crowd
+     *
+     * @return false if nobody came: every look is on the map already
      */
-    private static void join(Point3DShort border, Point3DShort spot) {
-        LivingEntity le = World.addNewLiving(PROTESTER_TYPES[Utils.getRandomBetween(0, PROTESTER_TYPES.length - 1)], LivingEntity.TYPE_FRIENDLY, true, border.x, border.y, border.z, true);
+    private static boolean join(Point3DShort border, Point3DShort spot) {
+        String sLook = getFreeLook();
+        if (sLook == null) {
+            return false;
+        }
+        LivingEntity le = World.addNewLiving(sLook, LivingEntity.TYPE_FRIENDLY, true, border.x, border.y, border.z, true);
         if (le == null) {
-            return;
+            return false;
         }
         name(le);
-        le.setDestination(near(spot));
-        alProtesters.add(new int[] {le.getID(), GO_GATHER, -1, 0});
+        Point3DShort p3d = near(spot);
+        le.setDestination(p3d);
+        alProtesters.add(new int[] {le.getID(), GO_GATHER, cellKey(p3d.x, p3d.y, p3d.z), 0});
+        return true;
+    }
+
+    /**
+     * @return a protester's type nobody on the map is wearing, picked at
+     *         random, or null when all of them are out.  Those on their way
+     *         home count until they have left.
+     */
+    private static String getFreeLook() {
+        ArrayList<String> alFree = new ArrayList<String>(Arrays.asList(PROTESTER_TYPES));
+        for (int[] p : alProtesters) {
+            LivingEntity le = World.getLivingEntityByID(p[0]);
+            if (le != null) {
+                alFree.remove(le.getIniHeader());
+            }
+        }
+        return alFree.isEmpty() ? null : alFree.get(Utils.getRandomBetween(0, alFree.size() - 1));
     }
 
     /**
@@ -441,7 +485,8 @@ public final class Protests {
 
     /**
      * Every two hours one or two more join the crowd, up to five and one
-     * more for every two days of the site (MAX_CROWD at most)
+     * more for every two days of the site and for every eight racks
+     * (MAX_CROWD and one more for every four racks at most)
      */
     private static void grow() {
         if (protestSpot == -1 || protestEntry == -1) {
@@ -454,8 +499,9 @@ public final class Protests {
         int iJoined = 0;
         int iMax = Math.min(MAX_CROWD + hallRacks / 4, 5 + getSiteDays() / 2 + hallRacks / RACKS_PER_RAIDER);
         for (int i = Utils.getRandomBetween(1, 2); i > 0 && getActive() < iMax; i--) {
-            join(border, spot);
-            iJoined++;
+            if (join(border, spot)) {
+                iJoined++;
+            }
         }
         if (iJoined > 0) {
             MessagesPanel.addMessage(MessagesPanel.TYPE_SYSTEM, MessageFormat.format(Messages.getString("DataCenter.protestGrows"), getActive()), ColorGL.ORANGE, spot); //$NON-NLS-1$
@@ -463,17 +509,22 @@ public final class Protests {
     }
 
     /**
-     * The crowd chants one of its slogans, in the log
+     * The crowd chants one of its slogans, in the log: someone else's each
+     * wave, with no dice drawn
      */
     private static void chant() {
+        ArrayList<LivingEntity> alGathered = new ArrayList<LivingEntity>();
         for (int[] p : alProtesters) {
             if (p[1] == GO_GATHER) {
                 LivingEntity le = World.getLivingEntityByID(p[0]);
                 if (le != null) {
-                    MessagesPanel.addMessage(MessagesPanel.TYPE_SYSTEM, MessageFormat.format(Messages.getString("DataCenter.protestChant"), slogan(p[0] + Game.getWorld().getTurn() / World.TIME_MODIFIER_HOUR)), ColorGL.ORANGE, new Point3DShort(le.getX(), le.getY(), le.getZ())); //$NON-NLS-1$
-                    return;
+                    alGathered.add(le);
                 }
             }
+        }
+        if (!alGathered.isEmpty()) {
+            LivingEntity le = alGathered.get(Game.getWorld().getTurn() / WAVE_TURNS % alGathered.size());
+            MessagesPanel.addMessage(MessagesPanel.TYPE_SYSTEM, MessageFormat.format(Messages.getString("DataCenter.protestChant"), slogan(le)), ColorGL.ORANGE, new Point3DShort(le.getX(), le.getY(), le.getZ())); //$NON-NLS-1$
         }
     }
 
@@ -495,11 +546,11 @@ public final class Protests {
     }
 
     /**
-     * A protester is named by the slogan on the sign, picked by the living's
-     * ID so it is the same again after a load
+     * A protester is named by the slogan of its look, one for each of the 25,
+     * so it is the same again after a load
      */
     private static void name(LivingEntity le) {
-        le.getLivingEntityData().setName(MessageFormat.format(Messages.getString("DataCenter.protesterName"), slogan(le.getID()))); //$NON-NLS-1$
+        le.getLivingEntityData().setName(MessageFormat.format(Messages.getString("DataCenter.protesterName"), slogan(le))); //$NON-NLS-1$
     }
 
     /**
@@ -510,7 +561,7 @@ public final class Protests {
      */
     private static void sendRaiders() {
         ArrayList<Item> alTargets = getTargets();
-        if (alTargets.isEmpty()) {
+        if (alTargets.isEmpty() || wrecksThisProtest >= 1 + hallRacks / RACKS_PER_WRECK) {
             return;
         }
         ArrayList<int[]> alReady = new ArrayList<int[]>();
@@ -549,8 +600,8 @@ public final class Protests {
     /**
      * @return the most protesters one raid sends: one for every eight racks
      *         in the hall, rounded, and at least one (4 racks: 1, 12: 2, 20:
-     *         3, 28: 4, 36: 5); the crowd's own limit, one and one more for
-     *         every three, is never above 5, so from 36 racks it decides
+     *         3, 28: 4, 36: 5); the crowd's own limit is one and one more
+     *         for every three
      */
     static int getRaidCap() {
         return Math.max(1, (hallRacks + RACKS_PER_RAIDER / 2) / RACKS_PER_RAIDER);
@@ -700,7 +751,7 @@ public final class Protests {
         if (p3d == null) {
             return;
         }
-        LivingEntity guard = World.addNewLiving(GUARD_TYPE, LivingEntity.TYPE_CITIZEN, true, p3d.x, p3d.y, p3d.z, true);
+        LivingEntity guard = World.addNewLiving(Crew.getGuardType(), LivingEntity.TYPE_CITIZEN, true, p3d.x, p3d.y, p3d.z, true);
         if (!(guard instanceof Citizen)) {
             return;
         }
@@ -982,6 +1033,7 @@ public final class Protests {
         if (Game.isHeadless()) {
             System.out.println("[DataCenter] " + Game.getWorld().getDate() + " " + sWrecked + " at " + (p3d == null ? "?" : p3d.x + "," + p3d.y + "," + p3d.z)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
         }
+        wrecksThisProtest++;
         // It makes the news: the reputation drops (DataCenter.newsHit)
         int iReputation = DataCenter.newsHit();
         MessagesPanel.addMessage(MessagesPanel.TYPE_SYSTEM, Messages.getString(sKey) + " " + MessageFormat.format(Messages.getString("DataCenter.protestNews"), iReputation), ColorGL.RED, p3d); //$NON-NLS-1$ //$NON-NLS-2$
@@ -1013,16 +1065,32 @@ public final class Protests {
     }
 
     /**
-     * @return a cell within two of the spot where one can stand, so the group
-     *         spreads out, or the spot itself
+     * @return a cell for one more of the crowd, where one can stand, not under
+     *         a roof and with no one else of the crowd on it (a third entry in
+     *         a gatherer's record is the cell it stands on): within two of the
+     *         spot, farther out once those are taken, or the spot itself when
+     *         no cell is free within CROWD_REACH
      */
     private static Point3DShort near(Point3DShort spot) {
-        for (int i = 0; i < 8; i++) {
-            int x = spot.x + Utils.getRandomBetween(-2, 2);
-            int y = spot.y + Utils.getRandomBetween(-2, 2);
-            if (x >= 0 && y >= 0 && x < World.MAP_WIDTH && y < World.MAP_HEIGHT && LivingEntity.isCellAllowed(x, y, spot.z)
-                    && World.getCell(x, y, spot.z).getAstarZoneID() == World.getCell(spot).getAstarZoneID()) {
-                return new Point3DShort((short) x, (short) y, spot.z);
+        HashSet<Integer> hsTaken = new HashSet<Integer>();
+        for (int[] p : alProtesters) {
+            if (p[1] == GO_GATHER) {
+                hsTaken.add(p[2]);
+            }
+        }
+        int iZone = World.getCell(spot).getAstarZoneID();
+        for (int r = 2; r <= CROWD_REACH; r++) {
+            ArrayList<Point3DShort> alFree = new ArrayList<Point3DShort>();
+            for (int x = Math.max(0, spot.x - r); x <= Math.min(World.MAP_WIDTH - 1, spot.x + r); x++) {
+                for (int y = Math.max(0, spot.y - r); y <= Math.min(World.MAP_HEIGHT - 1, spot.y + r); y++) {
+                    if (!hsTaken.contains(cellKey(x, y, spot.z)) && LivingEntity.isCellAllowed(x, y, spot.z)
+                            && World.getCell(x, y, spot.z).getAstarZoneID() == iZone && !Weather.isUnderRoof(x, y, spot.z)) {
+                        alFree.add(new Point3DShort((short) x, (short) y, spot.z));
+                    }
+                }
+            }
+            if (!alFree.isEmpty()) {
+                return alFree.get(Utils.getRandomBetween(0, alFree.size() - 1));
             }
         }
         return new Point3DShort(spot.x, spot.y, spot.z);
@@ -1073,8 +1141,8 @@ public final class Protests {
         return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
     }
 
-    private static String slogan(int i) {
-        return Messages.getString("DataCenter.slogan" + (i % SLOGANS)); //$NON-NLS-1$
+    private static String slogan(LivingEntity le) {
+        return Messages.getString("DataCenter.slogan." + le.getIniHeader()); //$NON-NLS-1$
     }
 
     private static void say(String sKey, ColorGL color, LivingEntity le) {

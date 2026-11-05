@@ -17,6 +17,7 @@
 		<item id="qdceraser" code="QUEUEANDPLACE" parameter="qdceraser" />
 		<item id="qdcvending" code="QUEUEANDPLACE" parameter="qdcvending" />
 		<item id="qdccoffee" code="QUEUEANDPLACE" parameter="qdccoffee" />
+		<item id="qdcfiber2" code="QUEUEANDPLACE" parameter="qdcfiber2" />
 		<item id="back" name="Back" code="BACK" icon="ui_back" />
 	</datacenter>
 
@@ -53,6 +54,10 @@
 		<item id="qdctv" code="QUEUEANDPLACE" parameter="qdctv" description="Made at the workbench from a wood and a steel. Goes in a bunk room." />
 		<item id="qdcconsole" code="QUEUEANDPLACE" parameter="qdcconsole" description="Made at the workbench from a steel. Goes in a bunk room." />
 		<item id="qdcbar" code="QUEUEANDPLACE" parameter="qdcbar" description="Made at the workbench from 2 wood. Goes in a donut shop." />
+		<item id="qdcpingpong" code="QUEUEANDPLACE" parameter="qdcpingpong" description="Made at the workbench from 3 wood. Goes in a break room." />
+		<item id="qdcbeanbag" code="QUEUEANDPLACE" parameter="qdcbeanbag" description="Made at the workbench from a wood and a bag of potting soil." />
+		<item id="qdcnappod" code="QUEUEANDPLACE" parameter="qdcnappod" description="Made at the workbench from a wood and 2 steel. Goes in a bunk room." />
+		<item id="qdckombuchatap" code="QUEUEANDPLACE" parameter="qdckombuchatap" description="Made at the workbench from a wood and a steel." />
 		<item id="qdcplanter" code="QUEUEANDPLACEROW" parameter="qdcplanter" />
 		<item id="back" name="Back" code="BACK" icon="ui_back" />
 	</furniture>

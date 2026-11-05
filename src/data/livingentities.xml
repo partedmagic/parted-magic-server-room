@@ -9,9 +9,13 @@
 		     workers' (tools/builder_sprites.py) -->
 		<altGraphics>citizenmale3</altGraphics>
 		<altGraphics>citizenmale5</altGraphics>
+		<altGraphics>citizenmale7</altGraphics>
+		<altGraphics>citizenmale8</altGraphics>
+		<altGraphics>citizenmale9</altGraphics>
+		<altGraphics>citizenmale10</altGraphics>
+		<altGraphics>citizenmale11</altGraphics>
 
 		<namePoolTag>male</namePoolTag>
-		<surnamePoolTag>surname</surnamePoolTag>
 
 		<attack>1d599+800</attack>
 		<attackSpeed>5</attackSpeed>
@@ -50,9 +54,13 @@
 		     workers' (tools/builder_sprites.py) -->
 		<altGraphics>citizenfemale4</altGraphics>
 		<altGraphics>citizenfemale6</altGraphics>
+		<altGraphics>citizenfemale7</altGraphics>
+		<altGraphics>citizenfemale8</altGraphics>
+		<altGraphics>citizenfemale9</altGraphics>
+		<altGraphics>citizenfemale10</altGraphics>
+		<altGraphics>citizenfemale11</altGraphics>
 
 		<namePoolTag>female</namePoolTag>
-		<surnamePoolTag>surname</surnamePoolTag>
 		<female>true</female>
 
 		<attack>1d599+800</attack>
@@ -93,9 +101,17 @@
 		<hate>ENEMY</hate>
 		<altGraphics>buildermale2</altGraphics>
 		<altGraphics>buildermale3</altGraphics>
+		<altGraphics>buildermale4</altGraphics>
+		<altGraphics>buildermale5</altGraphics>
+		<altGraphics>buildermale6</altGraphics>
+		<altGraphics>buildermale7</altGraphics>
+		<altGraphics>buildermale8</altGraphics>
+		<altGraphics>buildermale9</altGraphics>
+		<altGraphics>buildermale10</altGraphics>
+		<altGraphics>buildermale11</altGraphics>
+		<altGraphics>buildermale12</altGraphics>
 
 		<namePoolTag>male</namePoolTag>
-		<surnamePoolTag>surname</surnamePoolTag>
 
 		<attack>1d599+800</attack>
 		<attackSpeed>5</attackSpeed>
@@ -132,9 +148,17 @@
 		<hate>ENEMY</hate>
 		<altGraphics>builderfemale2</altGraphics>
 		<altGraphics>builderfemale3</altGraphics>
+		<altGraphics>builderfemale4</altGraphics>
+		<altGraphics>builderfemale5</altGraphics>
+		<altGraphics>builderfemale6</altGraphics>
+		<altGraphics>builderfemale7</altGraphics>
+		<altGraphics>builderfemale8</altGraphics>
+		<altGraphics>builderfemale9</altGraphics>
+		<altGraphics>builderfemale10</altGraphics>
+		<altGraphics>builderfemale11</altGraphics>
+		<altGraphics>builderfemale12</altGraphics>
 
 		<namePoolTag>female</namePoolTag>
-		<surnamePoolTag>surname</surnamePoolTag>
 		<female>true</female>
 
 		<attack>1d599+800</attack>
@@ -505,8 +529,10 @@
 
 	<!-- Step 5 of docs/stakes.md: the protesters and the hired guard.  FRIENDLY
 	     and never wandering (movePCT 0), like the trucks: xaos.datacenter
-	     Protests walks them.  A closed door stops them, nothing hurts them.
-	     Each protester's name is set to a slogan when it comes. -->
+	     Protests walks them.  Walls stop them, nothing hurts them.
+	     Each type is a look of its own with a slogan of its own, which becomes
+	     the protester's name, 25 in all: Protests never puts two of a type on
+	     the map together. -->
 	<protester1>
 		<type>FRIENDLY</type>
 		<name>Protester</name>
@@ -555,6 +581,358 @@
 		<animatedWhenIdle>true</animatedWhenIdle>
 		<facingDirections>true</facingDirections>
 	</protester3>
+	<protester4>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester4>
+	<protester5>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester5>
+	<protester6>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester6>
+	<protester7>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester7>
+	<protester8>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester8>
+	<protester9>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester9>
+	<protester10>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester10>
+	<protester11>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester11>
+	<protester12>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester12>
+	<protester13>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester13>
+	<protester14>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester14>
+	<protester15>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester15>
+	<protester16>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester16>
+	<protester17>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester17>
+	<protester18>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester18>
+	<protester19>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester19>
+	<protester20>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester20>
+	<protester21>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester21>
+	<protester22>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester22>
+	<protester23>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester23>
+	<protester24>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester24>
+	<protester25>
+		<type>FRIENDLY</type>
+		<name>Protester</name>
+		<attack>1</attack>
+		<attackSpeed>1</attackSpeed>
+		<defense>1</defense>
+		<healthPoints>1</healthPoints>
+		<attackVerb>shouts at</attackVerb>
+		<attackVerbInfinitive>shout at</attackVerbInfinitive>
+		<damage>1</damage>
+		<movePCT>0</movePCT>
+		<walkSpeed>60</walkSpeed>
+		<evadeTraps>true</evadeTraps>
+		<animatedWhenIdle>true</animatedWhenIdle>
+		<facingDirections>true</facingDirections>
+	</protester25>
 
 	<!-- The bear and the ghost (Bear, the second stakes pass, 2026-10-31):
 	     friendly so nobody fights them; the bear's walk is Bear's, the
@@ -656,7 +1034,6 @@
 		<name>Security guard</name>
 
 		<namePoolTag>male</namePoolTag>
-		<surnamePoolTag>surname</surnamePoolTag>
 
 		<attack>1d599+800</attack>
 		<attackSpeed>5</attackSpeed>
@@ -687,4 +1064,76 @@
 
 		<fxDead>fxdeadmale</fxDead>
 	</dcguard>
+	<dcguard2>
+		<type>CITIZEN</type>
+		<hate>ENEMY</hate>
+		<name>Security guard</name>
+
+		<namePoolTag>male</namePoolTag>
+
+		<attack>1d599+800</attack>
+		<attackSpeed>5</attackSpeed>
+		<defense>1d300+300</defense>
+		<healthPoints>1d400+1700</healthPoints>
+		<attackVerb>talks to</attackVerb>
+		<attackVerbInfinitive>talk to</attackVerbInfinitive>
+		<damage>1d59+170</damage>
+		<LOS>1d3+2</LOS>
+
+		<movePCT>1d4+3</movePCT>
+		<walkSpeed>40</walkSpeed>
+
+		<maxHungryTurns>1d1119+1760</maxHungryTurns>
+		<maxSleepTurns>1d719+2160</maxSleepTurns>
+		<eatZone>zdining</eatZone>
+
+		<facingDirections>true</facingDirections>
+		<equipAllowed>metal,cloth,wood,bone,bow,hammer,spear,mace,sword,axe,misc</equipAllowed>
+
+		<workCounterPCT>1d10+20</workCounterPCT>
+		<idleCounterPCT>1d10+27</idleCounterPCT>
+
+		<drop>
+			<item>corpse</item>
+			<PCT>100</PCT>
+		</drop>
+
+		<fxDead>fxdeadmale</fxDead>
+	</dcguard2>
+	<dcguard3>
+		<type>CITIZEN</type>
+		<hate>ENEMY</hate>
+		<name>Security guard</name>
+
+		<namePoolTag>female</namePoolTag>
+
+		<attack>1d599+800</attack>
+		<attackSpeed>5</attackSpeed>
+		<defense>1d300+300</defense>
+		<healthPoints>1d400+1700</healthPoints>
+		<attackVerb>talks to</attackVerb>
+		<attackVerbInfinitive>talk to</attackVerbInfinitive>
+		<damage>1d59+170</damage>
+		<LOS>1d3+2</LOS>
+
+		<movePCT>1d4+3</movePCT>
+		<walkSpeed>40</walkSpeed>
+
+		<maxHungryTurns>1d1119+1760</maxHungryTurns>
+		<maxSleepTurns>1d719+2160</maxSleepTurns>
+		<eatZone>zdining</eatZone>
+
+		<facingDirections>true</facingDirections>
+		<equipAllowed>metal,cloth,wood,bone,bow,hammer,spear,mace,sword,axe,misc</equipAllowed>
+
+		<workCounterPCT>1d10+20</workCounterPCT>
+		<idleCounterPCT>1d10+27</idleCounterPCT>
+
+		<drop>
+			<item>corpse</item>
+			<PCT>100</PCT>
+		</drop>
+
+		<fxDead>fxdeadmale</fxDead>
+	</dcguard3>
 </livingentities>

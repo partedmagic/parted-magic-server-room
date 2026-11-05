@@ -126,7 +126,11 @@ public final class Game {
 	// The day's diesel draw (DataCenter), the wall each copper thief breaks
 	// through and the holes they left (Thieves)
 	public final static int SAVEGAME_DIESEL = 19;
-	public final static int SAVEGAME_VERSION = SAVEGAME_DIESEL;
+	// A fiber cut and a DNS failure, coming or on (Network)
+	public final static int SAVEGAME_NETWORK = 20;
+	// Buyout: the offers and the sale (2026-11-04)
+	public final static int SAVEGAME_BUYOUT = 21;
+	public final static int SAVEGAME_VERSION = SAVEGAME_BUYOUT;
 	public static int SAVEGAME_LOADING_VERSION = 0;
 	public static boolean SAVE_MISSION = true;
 

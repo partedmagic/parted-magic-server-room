@@ -16,6 +16,13 @@ people quit. Power outages, heat waves, rain, protesters, copper thieves and
 a bear all cause trouble. The site is lost after three dawns in a row below
 zero coins, or when the whole crew is gone.
 
+Run a big site well and Ellen Tusk calls to buy it. Sell, wipe every rack with
+Erase, and the game ends at that price. Or keep it and hold out for more, and
+risk losing it all. Your biggest buyout is your score, and you can post it to
+the [world leaderboard](https://partedmagic.com/server-room-leaderboard/). Nothing
+is sent unless you choose to post: then the company name you type, the price, the
+days and the site type go to partedmagic.com and show on that page.
+
 The game has a tutorial that covers the basics.
 
 # Download and play
@@ -29,8 +36,8 @@ Java runtime, so you do not need to install Java.
    - macOS: `Parted Magic Server Room.app`.
    - Linux: `Parted Magic Server Room/bin/Parted Magic Server Room`.
 
-**Windows:** the game is not code-signed yet, so the first start shows a
-SmartScreen warning, "Windows protected your PC". Click **More info**, then
+**Windows:** the game is signed by Parted Magic LLC. If Windows still shows a
+SmartScreen warning, "Windows protected your PC", click **More info**, then
 **Run anyway**. Windows remembers the choice.
 
 **macOS:** the Mac version runs on Macs with Apple silicon. It is signed by

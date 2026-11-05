@@ -32,7 +32,8 @@ import xaos.zones.ZoneManagerItem;
  * rest for someone when it is walled and roofed (isEnclosed) and they have
  * something to do: a TV or a game console in their own bunk room, or, for a
  * construction worker, a walled and roofed donut shop with a donut case on
- * the site.
+ * the site, or a place at a ping pong table in a walled and roofed break room
+ * (Patrick, 2026-11-04, picking the tech perks; PLAYERS_PER_TABLE each).
  *
  * The donut shop was the tavern until 2026-11-01 (Patrick: "in towns if you
  * didn't have a tavern, the heroes would show up. In this game if you don't
@@ -58,6 +59,8 @@ public final class Leisure {
     private static final String BAR = "dcbar"; //$NON-NLS-1$
     private static final String TAVERN = "ztavern"; //$NON-NLS-1$
     private static final String BREAK_ROOM = "zdining"; //$NON-NLS-1$
+    private static final String PING_PONG = "dcpingpong"; //$NON-NLS-1$
+    private static final int PLAYERS_PER_TABLE = 4;
 
     private static int checkedHour = Integer.MIN_VALUE;
     private static final HashMap<Integer, Boolean> hmEnclosed = new HashMap<Integer, Boolean>();
@@ -109,6 +112,7 @@ public final class Leisure {
         boolean bTavern = false;
         boolean bBreakRoom = false;
         boolean bBreakRoomShut = false;
+        int iPlaces = 0;
         ArrayList<Zone> alZones = Game.getWorld().getZones();
         for (int i = 0; i < alZones.size(); i++) {
             Zone zone = alZones.get(i);
@@ -121,6 +125,9 @@ public final class Leisure {
             if (BREAK_ROOM.equals(zone.getIniHeader())) {
                 bBreakRoom = true;
                 bBreakRoomShut |= bEnclosed;
+                if (bEnclosed) {
+                    iPlaces += count(zone, PING_PONG) * PLAYERS_PER_TABLE;
+                }
             } else if (TAVERN.equals(zone.getIniHeader()) && bEnclosed && holds(zone, BAR)) {
                 bTavern = true;
             }
@@ -136,6 +143,12 @@ public final class Leisure {
             Zone room = iZone > 0 ? Zone.getZone(iZone) : null;
             if ((room != null && (holds(room, TV) || holds(room, CONSOLE))) || (bTavern && Crew.isBuilder(cit))) {
                 hsBusy.add(iID);
+            }
+        }
+        // Whoever has nothing else takes a place at a ping pong table
+        for (Integer iID : World.getCitizenIDs()) {
+            if (iPlaces > 0 && hsBusy.add(iID)) {
+                iPlaces--;
             }
         }
     }
@@ -159,13 +172,18 @@ public final class Leisure {
     }
 
     private static boolean holds(Zone zone, String sIniHeader) {
+        return count(zone, sIniHeader) > 0;
+    }
+
+    private static int count(Zone zone, String sIniHeader) {
+        int iCount = 0;
         for (Point3DShort p : zone.getPoints()) {
             Item item = World.getCell(p.x, p.y, p.z).getItem();
             if (item != null && sIniHeader.equals(item.getIniHeader()) && item.isLocked()) {
-                return true;
+                iCount++;
             }
         }
-        return false;
+        return iCount;
     }
 
     /**

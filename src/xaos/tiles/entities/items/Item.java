@@ -8,7 +8,9 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import xaos.datacenter.Buyout;
 import xaos.datacenter.DataCenter;
+import xaos.datacenter.Network;
 import xaos.TownsProperties;
 
 import xaos.actions.ActionManager;
@@ -598,6 +600,11 @@ public class Item extends Entity implements Externalizable {
 
 			// Item created, we check the tutorial flow
 			Game.updateTutorialFlow (TutorialTrigger.TYPE_INT_COLLECT, imi.getNumericalIniHeader (), null);
+
+			// The Erase job's result, for the last screen of a sale
+			if (ERASED_DRIVE.equals (imi.getIniHeader ())) {
+				Buyout.noteDriveErased ();
+			}
 		}
 
 		return item;
@@ -1216,7 +1223,7 @@ public class Item extends Entity implements Externalizable {
 	 * Mira si el item A BORRAR/PONER NO OPERATIVO era un connector/door para setear los zoneIDs
 	 */
 	private void checkConnectors (ItemManagerItem imi) {
-		if (isOperative () && isLocked () && (imi.isZoneMergerUp () || imi.isWall () || (imi.isDoor () && isDoorStatus (FLAG_WALL_CONNECTOR_STATUS_LOCKED_AND_CLOSED)))) {
+		if (isOperative () && isLocked () && (imi.isZoneMergerUp () || imi.isWall () || imi.isDcRoof () || (imi.isDoor () && isDoorStatus (FLAG_WALL_CONNECTOR_STATUS_LOCKED_AND_CLOSED)))) {
 			World.setRecheckASZID (true); // Ojo! No nos vale con un simple merge (caso escaleras que tienen un dig arriba con -1)
 		}
 	}
@@ -1949,8 +1956,12 @@ public class Item extends Entity implements Externalizable {
 				container.fillMenu (sm, imi.getName ());
 				sm.addItem (new SmartMenu (SmartMenu.TYPE_TEXT, null, null, null, null));
 			}
-			sm.addItem (new SmartMenu (SmartMenu.TYPE_ITEM, Messages.getString ("Item.0") + imi.getName (), null, CommandPanel.COMMAND_DESTROY_ENTITY, null, null, cell.getCoordinates ().toPoint3D (), Color.ORANGE)); //$NON-NLS-1$
-			sm.addItem (new SmartMenu (SmartMenu.TYPE_TEXT, null, null, null, null));
+			// The fiber line and the DNS server stay: with either gone, that
+			// trouble could never come (Network)
+			if (!Network.isFixture (imi.getDcNet ())) {
+				sm.addItem (new SmartMenu (SmartMenu.TYPE_ITEM, Messages.getString ("Item.0") + imi.getName (), null, CommandPanel.COMMAND_DESTROY_ENTITY, null, null, cell.getCoordinates ().toPoint3D (), Color.ORANGE)); //$NON-NLS-1$
+				sm.addItem (new SmartMenu (SmartMenu.TYPE_TEXT, null, null, null, null));
+			}
 		}
 	}
 
@@ -2074,7 +2085,15 @@ public class Item extends Entity implements Externalizable {
 
 					if (!bMaxReached) {
 						// Ok, no hay suficientes vecinos, toca meter uno
-						switch (Utils.getRandomBetween (1, 8)) {
+						int iNeighbor = Utils.getRandomBetween (1, 8);
+						// A data center machine with any free cell beside it makes its
+						// food on time (2026-11-04: it made nothing when the one cell it
+						// picked was taken, so one crowded by gear fed a quarter of the
+						// crew and nothing said why)
+						if (bItem && imi.isDataCenter ()) {
+							iNeighbor = getFreeNeighbor (iNeighbor, imi.getSpawn ());
+						}
+						switch (iNeighbor) {
 							case 1:
 								newChild ((short) (getX () - 1), (short) (getY () - 1), (short) getZ (), imi.getSpawn (), bItem);
 								break;
@@ -2202,6 +2221,50 @@ public class Item extends Entity implements Externalizable {
 				World.addNewLiving (lemi.getIniHeader (), lemi.getType (), bDiscovered, getX (), getY (), getZ (), true);
 			}
 		}
+	}
+
+
+	private static final String ERASED_DRIVE = "dceraseddrive"; //$NON-NLS-1$
+
+	/** The cells around an item in newChild's order: x, then y, for picks 1 to 8 */
+	private static final int[][] NEIGHBORS = { { -1, -1 }, { -1, 0 }, { -1, 1 }, { 0, -1 }, { 0, 1 }, { 1, -1 }, { 1, 0 }, { 1, 1 } };
+
+	/**
+	 * @return the first pick from iPick on (1 to 8, going round) whose cell can
+	 *         take the item, or iPick when none can
+	 */
+	private int getFreeNeighbor (int iPick, String sIniHeader) {
+		ItemManagerItem imi = ItemManager.getItem (sIniHeader);
+		for (int i = 0; i < NEIGHBORS.length; i++) {
+			int iThis = (iPick - 1 + i) % NEIGHBORS.length;
+			int x = getX () + NEIGHBORS[iThis][0];
+			int y = getY () + NEIGHBORS[iThis][1];
+			if (UtilsGeometry.isInsideMap (x, y, getZ ()) && Item.isCellAvailableForItem (imi, x, y, getZ (), true, true) && !World.getCell (x, y, getZ ()).isFlagOrders ()) {
+				return iThis + 1;
+			}
+		}
+		return iPick;
+	}
+
+
+	/**
+	 * @return true when this machine makes an item and has nowhere to put one:
+	 *         no free cell beside it and none of what it makes waiting there
+	 */
+	public boolean isBoxedIn () {
+		ItemManagerItem imi = ItemManager.getItem (getIniHeader ());
+		if (imi == null || imi.getSpawn () == null || !imi.isDataCenter () || ItemManager.getItem (imi.getSpawn ()) == null || getNumNeighbors (imi.getSpawn ()) > 0) {
+			return false;
+		}
+		ItemManagerItem imiChild = ItemManager.getItem (imi.getSpawn ());
+		for (int[] n : NEIGHBORS) {
+			int x = getX () + n[0];
+			int y = getY () + n[1];
+			if (UtilsGeometry.isInsideMap (x, y, getZ ()) && Item.isCellAvailableForItem (imiChild, x, y, getZ (), true, true) && !World.getCell (x, y, getZ ()).isFlagOrders ()) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 
